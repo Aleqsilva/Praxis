@@ -1,0 +1,535 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- RACK und PSC Name einbauen -->
+<xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified"
+		   xmlns:xs="http://www.w3.org/2001/XMLSchema">
+	<xs:element name="Trackplan">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="Fds" maxOccurs="1" minOccurs="1">
+					<xs:complexType>
+						<xs:simpleContent>
+							<xs:extension base="xs:string">
+								<xs:attribute type="xs:string" name="name"/>
+								<xs:attribute type="xs:string" name="ip"/>
+								<xs:attribute type="xs:string" name="netmask"/>
+								<xs:attribute type="xs:string" name="version"/>
+								<xs:attribute name="caching" use="optional"> <!-- ON -->
+									<xs:simpleType>
+										<xs:restriction base="xs:string">
+											<xs:enumeration value="on"/>
+											<xs:enumeration value="off"/>
+										</xs:restriction>
+									</xs:simpleType>
+								</xs:attribute>
+								<xs:attribute name="websocketPort" use="optional"> <!-- 101 -->
+									<xs:simpleType>
+										<xs:restriction base="xs:integer">
+											<xs:minInclusive value="1"/>
+											<xs:maxInclusive value="65535"/>
+										</xs:restriction>
+									</xs:simpleType>
+								</xs:attribute>
+							</xs:extension>
+						</xs:simpleContent>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="Stations" maxOccurs="1" minOccurs="1">
+					<xs:complexType mixed="true">
+						<xs:sequence>
+							<xs:choice maxOccurs="unbounded" minOccurs="0">
+								<xs:element type="xs:string" name="ThisStation" maxOccurs="1" minOccurs="0"/>
+								<xs:element name="Station" maxOccurs="unbounded" minOccurs="0">
+									<xs:complexType>
+										<xs:simpleContent>
+											<xs:extension base="xs:string">
+												<xs:attribute type="xs:string" name="name" use="optional"/>
+												<xs:attribute type="xs:string" name="url" use="optional"/>
+											</xs:extension>
+										</xs:simpleContent>
+									</xs:complexType>
+								</xs:element>
+							</xs:choice>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="Track" maxOccurs="1" minOccurs="1">
+					<xs:complexType>
+						<xs:choice maxOccurs="unbounded" minOccurs="0">
+							<xs:element name="Rail">
+								<xs:complexType>
+									<xs:simpleContent>
+										<xs:extension base="xs:string">
+											<xs:attribute type="xs:integer" name="id" use="required"/>
+											<xs:attribute name="type" use="optional">
+												<xs:simpleType>
+													<xs:restriction base="xs:string">
+														<xs:enumeration value="LINE"/> <!-- Default is LINE -->
+														<xs:enumeration value="STOP"/>
+														<xs:enumeration value="SWITCH"/>
+													</xs:restriction>
+												</xs:simpleType>
+											</xs:attribute>
+											<xs:attribute type="xs:integer" name="angle"
+														  use="optional"/> <!-- Default is 0 -->
+											<xs:attribute type="xs:byte" name="mirror"
+														  use="optional"/>    <!-- Default is 0 -->
+											<xs:attribute type="xs:integer" name="x" use="required"/>
+											<xs:attribute type="xs:integer" name="y" use="required"/>
+										</xs:extension>
+									</xs:simpleContent>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="Crossing">
+								<xs:complexType mixed="true">
+									<xs:choice maxOccurs="unbounded" minOccurs="0">
+										<xs:element name="Path">
+											<xs:complexType>
+												<xs:simpleContent>
+													<xs:extension base="xs:string">
+														<xs:attribute type="xs:integer" name="from" use="optional"/>
+														<xs:attribute type="xs:integer" name="to" use="optional"/>
+													</xs:extension>
+												</xs:simpleContent>
+											</xs:complexType>
+										</xs:element>
+									</xs:choice>
+									<xs:attribute type="xs:integer" name="id" use="required"/>
+									<xs:attribute type="xs:integer" name="angle" use="optional"/> <!-- Default is 0 -->
+									<xs:attribute type="xs:integer" name="x" use="required"/>
+									<xs:attribute type="xs:integer" name="y" use="required"/>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="Sensor">
+								<xs:complexType>
+									<xs:simpleContent>
+										<xs:extension base="xs:string">
+											<xs:attribute type="xs:integer" name="id" use="required"/>
+											<xs:attribute type="xs:integer" name="angle"
+														  use="optional"/> <!-- Default is 0 -->
+											<xs:attribute type="xs:byte" name="invert"
+														  use="optional"/>    <!-- Default is 0 -->
+											<xs:attribute type="xs:byte" name="offset"
+														  use="optional"/>    <!-- Default is 8 -->
+											<xs:attribute type="xs:string" name="name" use="optional"/>
+											<xs:attribute type="xs:integer" name="fma0" use="optional"/>
+											<xs:attribute type="xs:integer" name="fma1" use="optional"/>
+											<xs:attribute type="xs:integer" name="refId" use="required"/>
+											<xs:attribute type="xs:integer" name="x" use="required"/>
+											<xs:attribute type="xs:integer" name="y" use="required"/>
+										</xs:extension>
+									</xs:simpleContent>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="Fma">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="Rails" minOccurs="0">
+											<xs:complexType>
+												<xs:sequence>
+													<xs:element name="Ref" minOccurs="0" maxOccurs="unbounded">
+														<xs:complexType>
+															<xs:simpleContent>
+																<xs:extension base="xs:string">
+																	<xs:attribute type="xs:integer" name="refId"
+																				  use="required"/>
+																	<xs:attribute type="xs:integer" name="from"
+																				  use="optional"/>
+																	<xs:attribute type="xs:integer" name="to"
+																				  use="optional"/>
+																</xs:extension>
+															</xs:simpleContent>
+														</xs:complexType>
+													</xs:element>
+												</xs:sequence>
+											</xs:complexType>
+										</xs:element>
+										<xs:element name="Sensors" minOccurs="1">
+											<xs:complexType>
+												<xs:sequence>
+													<xs:element name="Ref" maxOccurs="unbounded" minOccurs="0">
+														<xs:complexType>
+															<xs:simpleContent>
+																<xs:extension base="xs:string">
+																	<xs:attribute type="xs:integer" name="refId"
+																				  use="required"/>
+																	<xs:attribute name="fmaPosition" use="optional">
+																		<xs:simpleType>
+																			<xs:restriction base="xs:string">
+																				<xs:enumeration
+																						value="left"/> <!-- Default is LINE -->
+																				<xs:enumeration value="right"/>
+																			</xs:restriction>
+																		</xs:simpleType>
+																	</xs:attribute>
+																</xs:extension>
+															</xs:simpleContent>
+														</xs:complexType>
+													</xs:element>
+												</xs:sequence>
+											</xs:complexType>
+										</xs:element>
+									</xs:sequence>
+									<xs:attribute type="xs:integer" name="id" use="required"/>
+									<xs:attribute type="xs:integer" name="angle" use="optional"/> <!-- Default is 0 -->
+									<xs:attribute type="xs:byte" name="offset" use="optional"/> <!-- Default is 8 -->
+									<xs:attribute type="xs:string" name="name" use="optional"/>
+									<xs:attribute type="xs:integer" name="refId" use="required"/>
+									<xs:attribute type="xs:integer" name="x" use="required"/>
+									<xs:attribute type="xs:integer" name="y" use="required"/>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="Link">
+								<xs:complexType>
+									<xs:simpleContent>
+										<xs:extension base="xs:string">
+											<xs:attribute type="xs:integer" name="id" use="required"/>
+											<xs:attribute type="xs:string" name="url"
+														  use="optional"/>    <!-- Default is '#' -->
+											<xs:attribute type="xs:integer" name="angle"
+														  use="optional"/> <!-- Default is 0 -->
+											<xs:attribute type="xs:integer" name="x" use="required"/>
+											<xs:attribute type="xs:integer" name="y" use="required"/>
+										</xs:extension>
+									</xs:simpleContent>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="Poi">
+								<xs:complexType>
+									<xs:simpleContent>
+										<xs:extension base="xs:string">
+											<xs:attribute type="xs:integer" name="id" use="required"/>
+											<xs:attribute type="xs:integer" name="angle"
+														  use="optional"/> <!-- Default is 0 -->
+											<xs:attribute name="type" use="optional">
+												<xs:simpleType>
+													<xs:restriction base="xs:string">
+														<xs:enumeration value="BRIDGE"/> <!-- Default is BRIDGE -->
+														<xs:enumeration value="CABINET"/>
+														<xs:enumeration value="LEVEL-CROSSING"/>
+														<xs:enumeration value="HOUSE"/>
+														<xs:enumeration value="PLATFORM"/>
+														<xs:enumeration value="POWER-CABINET"/>
+														<xs:enumeration value="POWER-STATION"/>
+														<xs:enumeration value="SIGNAL"/>
+														<xs:enumeration value="STATION"/>
+														<xs:enumeration value="SWITCH"/>
+														<xs:enumeration value="TUNNEL"/>
+													</xs:restriction>
+												</xs:simpleType>
+											</xs:attribute>
+											<xs:attribute type="xs:integer" name="x" use="required"/>
+											<xs:attribute type="xs:integer" name="y" use="required"/>
+										</xs:extension>
+									</xs:simpleContent>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="Text">
+								<xs:complexType>
+									<xs:simpleContent>
+										<xs:extension base="xs:string">
+											<xs:attribute type="xs:integer" name="id" use="required"/>
+											<xs:attribute type="xs:integer" name="angle"
+														  use="optional"/> <!-- Default is 0 -->
+											<xs:attribute type="xs:string" name="name" use="required"/>
+											<xs:attribute type="xs:string" name="description" use="optional"/>
+											<xs:attribute name="v-align" use="optional">
+												<xs:simpleType>
+													<xs:restriction base="xs:string">
+														<xs:enumeration value="TOP"/>
+														<xs:enumeration value="CENTER"/> <!-- Default is CENTER -->
+														<xs:enumeration value="BOTTOM"/>
+													</xs:restriction>
+												</xs:simpleType>
+											</xs:attribute>
+											<xs:attribute type="xs:integer" name="x" use="required"/>
+											<xs:attribute type="xs:integer" name="y" use="required"/>
+										</xs:extension>
+									</xs:simpleContent>
+								</xs:complexType>
+							</xs:element>
+						</xs:choice>
+						<xs:attribute type="xs:integer" name="width" use="required"/>
+						<xs:attribute type="xs:integer" name="height" use="required"/>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="Supervisors" maxOccurs="1" minOccurs="0">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="Supervisor" maxOccurs="unbounded" minOccurs="0">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element type="xs:integer" name="RefFma" maxOccurs="unbounded"
+													minOccurs="0"/>
+									</xs:sequence>
+									<xs:attribute type="xs:integer" name="id" use="required"/>
+									<xs:attribute type="xs:string" name="name" use="optional"/>
+									<xs:attribute type="xs:integer" name="refId" use="required"/>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="Cubicles" maxOccurs="1" minOccurs="1">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="Cubicle" maxOccurs="unbounded" minOccurs="0">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="Rack" maxOccurs="unbounded" minOccurs="0">
+											<xs:complexType>
+												<xs:sequence>
+													<xs:element name="Bp" maxOccurs="unbounded" minOccurs="0">
+														<xs:complexType>
+															<xs:choice maxOccurs="unbounded" minOccurs="0">
+																<xs:element name="Psc">
+																	<xs:complexType>
+																		<xs:simpleContent>
+																			<xs:extension base="xs:string">
+																				<xs:attribute type="xs:integer"
+																							  name="id" use="required"/>
+																				<xs:attribute type="xs:integer"
+																							  name="slotId"
+																							  use="required"/>
+																				<xs:attribute type="xs:string"
+																							  name="name"
+																							  use="optional"/>
+																			</xs:extension>
+																		</xs:simpleContent>
+																	</xs:complexType>
+																</xs:element>
+																<xs:element name="Com">
+																	<xs:complexType>
+																		<xs:sequence>
+																			<xs:element name="Forwarding" maxOccurs="1"
+																						minOccurs="0">
+																				<xs:complexType>
+																					<xs:simpleContent>
+																						<xs:extension base="xs:string">
+																							<xs:attribute
+																									type="xs:integer"
+																									name="id"
+																									use="required"/>
+																							<xs:attribute
+																									type="xs:integer"
+																									name="refId"
+																									use="optional"/>
+																						</xs:extension>
+																					</xs:simpleContent>
+																				</xs:complexType>
+																			</xs:element>
+																			<xs:element name="Interlocking"
+																						maxOccurs="1" minOccurs="0">
+																				<xs:complexType>
+																					<xs:simpleContent>
+																						<xs:extension base="xs:string">
+																							<xs:attribute
+																									type="xs:integer"
+																									name="id"/>
+																						</xs:extension>
+																					</xs:simpleContent>
+																				</xs:complexType>
+																			</xs:element>
+																		</xs:sequence>
+																		<xs:attribute type="xs:integer" name="id"
+																					  use="required"/>
+																		<xs:attribute type="xs:integer" name="canId"
+																					  use="required"/>
+																		<xs:attribute type="xs:string" name="type"
+																					  use="optional"/>
+																		<xs:attribute name="redundant"
+																					  use="optional">    <!-- Default is NORMAL -->
+																			<xs:simpleType>
+																				<xs:restriction base="xs:string">
+																					<xs:enumeration value="NORMAL"/>
+																					<xs:enumeration value="MASTER"/>
+																					<xs:enumeration value="SLAVE"/>
+																				</xs:restriction>
+																			</xs:simpleType>
+																		</xs:attribute>
+																		<xs:attribute type="xs:string" name="name"
+																					  use="optional"/>
+																		<xs:attribute type="xs:integer" name="slotId"
+																					  use="required"/>
+																	</xs:complexType>
+																</xs:element>
+																<xs:element name="Aeb">
+																	<xs:complexType>
+																		<xs:simpleContent>
+																			<xs:extension base="xs:string">
+																				<xs:attribute type="xs:integer"
+																							  name="id" use="required"/>
+																				<xs:attribute type="xs:string"
+																							  name="name"
+																							  use="optional"/>
+																				<xs:attribute type="xs:integer"
+																							  name="canId"
+																							  use="required"/>
+																				<xs:attribute type="xs:integer"
+																							  name="refId"
+																							  use="required"/>
+																				<xs:attribute type="xs:integer"
+																							  name="slotId"
+																							  use="required"/>
+																			</xs:extension>
+																		</xs:simpleContent>
+																	</xs:complexType>
+																</xs:element>
+																<xs:element name="IoExb">
+																	<xs:complexType>
+																		<xs:choice minOccurs="0">
+																			<xs:element name="TrackSectionExtern">
+																				<xs:complexType>
+																					<xs:sequence>
+																						<xs:element name="FmaExtern"
+																									maxOccurs="2"
+																									minOccurs="1">
+																							<xs:complexType>
+																								<xs:simpleContent>
+																									<xs:extension
+																											base="xs:string">
+																										<xs:attribute
+																												type="xs:integer"
+																												name="refId"
+																												use="optional"/>
+																										<xs:attribute
+																												type="xs:string"
+																												name="name"
+																												use="optional"/>
+																									</xs:extension>
+																								</xs:simpleContent>
+																							</xs:complexType>
+																						</xs:element>
+																					</xs:sequence>
+																				</xs:complexType>
+																			</xs:element>
+																			<xs:element name="CountingHeadExtern">
+																				<xs:complexType>
+																					<xs:simpleContent>
+																						<xs:extension base="xs:string">
+																							<xs:attribute
+																									type="xs:integer"
+																									name="refId"
+																									use="optional"/>
+																							<xs:attribute
+																									type="xs:string"
+																									name="name"
+																									use="optional"/>
+																						</xs:extension>
+																					</xs:simpleContent>
+																				</xs:complexType>
+																			</xs:element>
+																			<xs:element name="IoData">
+																				<xs:complexType>
+																					<xs:simpleContent>
+																						<xs:extension base="xs:string">
+																							<xs:attribute
+																									name="configIN"
+																									use="optional">
+																								<xs:simpleType>
+																									<xs:restriction
+																											base="xs:string">
+																										<xs:enumeration
+																												value="SINGLE"/>
+																										<xs:enumeration
+																												value="DUAL"/>
+																										<xs:enumeration
+																												value="QUAD"/>
+																									</xs:restriction>
+																								</xs:simpleType>
+																							</xs:attribute>
+																							<xs:attribute
+																									name="configOUT"
+																									use="optional">
+																								<xs:simpleType>
+																									<xs:restriction
+																											base="xs:string">
+																										<xs:enumeration
+																												value="SINGLE"/>
+																										<xs:enumeration
+																												value="DUAL"/>
+																										<xs:enumeration
+																												value="QUAD"/>
+																									</xs:restriction>
+																								</xs:simpleType>
+																							</xs:attribute>
+																						</xs:extension>
+																					</xs:simpleContent>
+																				</xs:complexType>
+																			</xs:element>
+																		</xs:choice>
+																		<xs:attribute type="xs:integer" name="id"
+																					  use="required"/>
+																		<xs:attribute type="xs:string" name="name"
+																					  use="optional"/>
+																		<xs:attribute type="xs:integer" name="refId"
+																					  use="required"/>
+																		<xs:attribute type="xs:integer" name="slotId"
+																					  use="required"/>
+																	</xs:complexType>
+																</xs:element>
+																<xs:element name="EmptySlot">
+																	<xs:complexType>
+																		<xs:simpleContent>
+																			<xs:extension base="xs:string">
+																				<xs:attribute type="xs:integer"
+																							  name="id" use="required"/>
+																				<xs:attribute type="xs:integer"
+																							  name="slotId"
+																							  use="required"/>
+																			</xs:extension>
+																		</xs:simpleContent>
+																	</xs:complexType>
+																</xs:element>
+															</xs:choice>
+															<xs:attribute type="xs:integer" name="id" use="required"/>
+															<xs:attribute type="xs:integer" name="size" use="required"/>
+															<xs:attribute type="xs:integer" name="startSlot"
+																		  use="required"/>
+														</xs:complexType>
+													</xs:element>
+												</xs:sequence>
+												<xs:attribute type="xs:integer" name="id" use="required"/>
+												<xs:attribute type="xs:string" name="name" use="optional"/>
+											</xs:complexType>
+										</xs:element>
+									</xs:sequence>
+									<xs:attribute type="xs:integer" name="height" use="required"/>
+									<xs:attribute type="xs:integer" name="id" use="required"/>
+									<xs:attribute type="xs:string" name="name" use="optional"/>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="Settings" maxOccurs="1" minOccurs="0">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="Colors" maxOccurs="1" minOccurs="0">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="Color" maxOccurs="unbounded" minOccurs="0">
+											<xs:complexType>
+												<xs:simpleContent>
+													<xs:extension base="xs:string">
+														<xs:attribute type="xs:string" name="key" use="required"/>
+                                                        <xs:attribute type="xs:string" name="value" use="required"/>
+													</xs:extension>
+												</xs:simpleContent>
+											</xs:complexType>
+										</xs:element>
+									</xs:sequence>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+			<xs:attribute type="xs:string" name="name"/>
+		</xs:complexType>
+		<xs:key name="internIdUnique">
+			<xs:selector
+					xpath=".//Link | .//Sensor | .//Fma | .//Rail | .//Crossing | .//Poi | .//Text | .//Com | .//Interlocking | .//Forwarding | .//IoExb | .//EmptySlot | .//Aeb | .//Cubicle | .//Rack | .//Bp | .//Psc | .//Supervisor"/>
+			<xs:field xpath="@id"/>
+		</xs:key>
+	</xs:element>
+</xs:schema>

@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">  
+	<xs:simpleType name="Net_Def">
+		<xs:annotation>
+			<xs:documentation>Validate for following format: [0-255].[0-255].[0-255].[0-255]</xs:documentation>
+		</xs:annotation>
+        <xs:restriction base="xs:string">
+			<xs:pattern value="((1?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])\.){3}(1?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])"/>
+        </xs:restriction>
+    </xs:simpleType>
+	<xs:simpleType name="Strings_Def">
+        <xs:restriction base="xs:string">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="100"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Net_Def_Required">
+		<xs:union>
+			<xs:simpleType>
+				<xs:restriction base="Net_Def"/>
+			</xs:simpleType>
+		</xs:union>
+    </xs:simpleType>
+    <xs:simpleType name="Default_Gateway_Def">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="Gateway1"/>
+            <xs:enumeration value="Gateway2"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Port_Def">
+        <xs:restriction base="xs:integer">
+            <xs:maxExclusive value="65535"/>
+            <xs:minExclusive value="0"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="ElementType_Def">
+        <xs:restriction base="xs:string">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="20"/>
+            <xs:enumeration value="ComMaster"/>
+            <xs:enumeration value="ForwardingMaster"/>
+            <xs:enumeration value="InterlockingMaster"/>
+            <xs:enumeration value="ComSlave"/>
+            <xs:enumeration value="ForwardingSlave"/>
+            <xs:enumeration value="InterlockingSlave"/>
+            <xs:enumeration value="Aeb"/>
+            <xs:enumeration value="CountingHead"/>
+            <xs:enumeration value="TrackSection1"/>
+            <xs:enumeration value="TrackSection2"/>
+			<xs:enumeration value="IoData1"/>
+			<xs:enumeration value="IoData2"/>
+			<xs:enumeration value="IoData3"/>
+			<xs:enumeration value="IoData4"/>
+			<xs:enumeration value="IoData5"/>
+			<xs:enumeration value="IoData6"/>
+			<xs:enumeration value="IoData7"/>
+			<xs:enumeration value="IoData8"/>
+            <xs:enumeration value="TrackSectionExtern1"/>
+            <xs:enumeration value="TrackSectionExtern2"/>
+            <xs:enumeration value="TrackSectionExtern3"/>
+            <xs:enumeration value="TrackSectionExtern4"/>
+			<xs:enumeration value="TrackSectionExtern5"/>	
+			<xs:enumeration value="TrackSectionExtern6"/>	
+			<xs:enumeration value="TrackSectionExtern7"/>	
+			<xs:enumeration value="TrackSectionExtern8"/>	
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="ElementAssignment_Def">
+        <xs:restriction base="xs:string">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="31"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="ElementTrackplanId_Def">
+		<xs:restriction base="xs:unsignedLong">
+			<xs:minInclusive value="0"/>
+			<xs:maxInclusive value="18446744073709551615"/>
+		</xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="ElementId_Def">
+        <xs:restriction base="xs:unsignedInt">
+            <xs:minInclusive value="0"/>
+            <xs:maxInclusive value="4294967295"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Supervis_Def">
+		<xs:restriction base="xs:integer">
+			<xs:minInclusive value="0"/>
+			<xs:maxInclusive value="100"/>
+		</xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Generic_Def">
+		<xs:restriction base="xs:integer">
+			<xs:minInclusive value="0"/>
+			<xs:maxInclusive value="1"/>
+		</xs:restriction>
+	</xs:simpleType>	
+	<xs:simpleType name="SpeedCorrection_Def">
+		<xs:restriction base="xs:float">
+			<xs:minInclusive value="0"/>
+			<xs:maxInclusive value="2"/>
+		</xs:restriction>
+	</xs:simpleType>
+    <xs:simpleType name="Name_Def">
+        <xs:restriction base="xs:string">
+			<xs:minLength value="0"/>
+			<xs:maxLength value="28"/>
+		</xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="Value_Def">
+        <xs:restriction base="xs:string">
+			<xs:minLength value="0"/>
+			<xs:maxLength value="16"/>
+            <xs:pattern value="#[0-9A-Fa-f]+|[0-9]+"/>
+            <xs:pattern value="rgb\((( *0*([1]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5]) *),){2}( *0*([1]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5]) *)\)"/>
+		</xs:restriction>
+    </xs:simpleType>
+    <xs:complexType name="Color_Def">
+            <xs:attribute name="Name" >
+                <xs:simpleType>
+                  <xs:restriction base="Name_Def">
+                    <xs:enumeration value="color-state-offline"/>
+                    <xs:enumeration value="color-state-ok"/>
+                    <xs:enumeration value="color-state-error"/>
+                    <xs:enumeration value="color-state-warning"/>
+                    <xs:enumeration value="color-state-occupied"/>
+                    <xs:enumeration value="color-state-desensitised"/>
+                    <xs:enumeration value="color-state-trackClearance"/>
+                    <xs:enumeration value="color-state-wct"/>
+                    <xs:enumeration value="color-background-track"/>
+                    <xs:enumeration value="color-state-notMonitored"/>
+                  </xs:restriction>
+                </xs:simpleType>
+            </xs:attribute>
+            <xs:attribute name="Value" type="Value_Def" />
+            <xs:attribute name="Value2" type="Value_Def" />
+            <xs:attribute name="Type">
+                <xs:simpleType>
+                    <xs:restriction base="Name_Def">
+                        <xs:enumeration value="solid"/>
+                        <xs:enumeration value="dashed"/>
+                    </xs:restriction>
+                </xs:simpleType>
+            </xs:attribute>
+            <xs:attribute name="Animation">
+                <xs:simpleType>
+                    <xs:restriction base="Name_Def">
+                        <xs:enumeration value="flashing"/>
+                        <xs:enumeration value="no"/>
+                    </xs:restriction>
+                </xs:simpleType>
+            </xs:attribute>
+            <xs:attribute name="Interval" type="xs:int"/>
+            <xs:attribute name="DashArray" type="Name_Def"/>
+	</xs:complexType>
+	<xs:complexType name="ElementList_Def">
+        <xs:sequence>
+            <xs:element name="Element" type="Element_Def" minOccurs="1" maxOccurs="1000"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Element_Def">
+        <xs:all>
+            <xs:element name="ElementId" type="ElementId_Def"/>
+            <xs:element name="ElementType" type="ElementType_Def"/>
+            <xs:element name="ElementAssignment" type="ElementAssignment_Def"/>
+            <xs:element name="ElementTrackplanId" type="ElementTrackplanId_Def" minOccurs="0" maxOccurs="1"/>
+        </xs:all>
+    </xs:complexType>
+    <xs:complexType name="DestNet1List_Def">
+        <xs:sequence>
+            <xs:element name="DestNet1" type="DestNet1_Def" minOccurs="0" maxOccurs="255"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="DestNet1_Def">
+        <xs:all>
+            <xs:element name="DestIpAddressNet1" type="Net_Def_Required"/>
+            <xs:element name="DestMaskNet1" type="Net_Def_Required"/>
+        </xs:all>
+    </xs:complexType>
+    <xs:complexType name="DestNet2List_Def">
+        <xs:sequence>
+            <xs:element name="DestNet2" type="DestNet2_Def" minOccurs="0" maxOccurs="255"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="DestNet2_Def">
+        <xs:all>
+            <xs:element name="DestIpAddressNet2" type="Net_Def_Required"/>
+            <xs:element name="DestMaskNet2" type="Net_Def_Required"/>
+        </xs:all>
+    </xs:complexType>	
+	 <xs:complexType name="Colors_Def">
+        <xs:sequence>
+            <xs:element name="Color" type="Color_Def" minOccurs="0" maxOccurs="255"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Theme_Def">
+      <xs:all>
+        <xs:element name="Colors" type="Colors_Def" minOccurs="0" maxOccurs="1"/>
+      </xs:all>
+      <xs:attribute name="Base">
+      <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:enumeration value="frauscher-light"/>
+              <xs:enumeration value="frauscher-dark"/>
+            </xs:restriction>
+          </xs:simpleType>
+      </xs:attribute>
+    </xs:complexType>
+   <xs:complexType name="DisableLogs_Def">
+        <xs:all>
+            <xs:element name="InterlockingChannelWarning" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="WheelSpeed" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="WheelDiameter" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Railwear" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="ConfigUpload" minOccurs="0" maxOccurs="1"/>
+        </xs:all>
+    </xs:complexType>
+	<xs:element name="FdsConfig">
+        <xs:complexType>
+            <xs:all>
+                <xs:element name="ConfigVersion" type="Strings_Def"/>
+                <xs:element name="IpAddressNet1" type="Net_Def_Required"/>
+                <xs:element name="MaskNet1" type="Net_Def_Required"/>
+                <xs:element name="IpAddressNet2" type="Net_Def_Required" minOccurs="0" maxOccurs="1"/>
+                <xs:element name="MaskNet2" type="Net_Def_Required" minOccurs="0" maxOccurs="1"/>
+                <xs:element name="GatewayAddressNet1" type="Net_Def_Required" minOccurs="0" maxOccurs="1"/>
+                <xs:element name="GatewayAddressNet2" type="Net_Def_Required" minOccurs="0" maxOccurs="1"/>
+		        <xs:element name="DefaultGateway" type="Default_Gateway_Def" minOccurs="0" maxOccurs="1"/>
+                <xs:element name="RouteTableNet1" type="DestNet1List_Def" minOccurs="0" maxOccurs="1"/>
+                <xs:element name="RouteTableNet2" type="DestNet2List_Def" minOccurs="0" maxOccurs="1"/>
+                <xs:element name="UdpPortFadc" type="Port_Def"/>
+                <xs:element name="TimeServer1" type="Net_Def_Required" minOccurs="0" maxOccurs="1"/>
+                <xs:element name="TimeServer2" type="Net_Def_Required" minOccurs="0" maxOccurs="1"/>
+                <xs:element name="StationName" type="Strings_Def"/>
+                <xs:element name="FdsName" type="Strings_Def"/>
+                <xs:element name="SupervisCount" type="Supervis_Def" minOccurs="0" maxOccurs="1"/>
+                <xs:element name="GenericStatus" type="Generic_Def" minOccurs="0" maxOccurs="1"/>
+				<xs:element name="SpeedCorrection123" type="SpeedCorrection_Def" minOccurs="0" maxOccurs="1"/>
+				<xs:element name="SpeedCorrection180" type="SpeedCorrection_Def" minOccurs="0" maxOccurs="1"/>
+				<xs:element name="TimeZone" type="Strings_Def"/>
+                <xs:element name="SyslogServerIpNet1" type="Net_Def_Required" minOccurs="0" maxOccurs="1"/>
+                <xs:element name="SyslogServerPortNet1" type="Port_Def" minOccurs="0" maxOccurs="1"/>
+                <xs:element name="SyslogServerIpNet2" type="Net_Def_Required" minOccurs="0" maxOccurs="1"/>
+                <xs:element name="SyslogServerPortNet2" type="Port_Def" minOccurs="0" maxOccurs="1"/>
+                <xs:element name="Theme" type="Theme_Def" minOccurs="0" maxOccurs="1"/>
+                <xs:element name="DisableLogs" type="DisableLogs_Def" minOccurs="0" maxOccurs="1"/>
+		        <xs:element name="ElementList" type="ElementList_Def" minOccurs="0" maxOccurs="1"/>
+                
+            </xs:all>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>
