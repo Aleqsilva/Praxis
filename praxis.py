@@ -54,7 +54,6 @@ except Exception:
 
 # === CLASSES AUXILIARES PARA TRACKPLAN ===
 
-
 def _app_base_dir() -> Path:
     """
     Base para localizar arquivos quando:
@@ -876,7 +875,7 @@ class FDSFormGenerator:
         except:
             pass
         
-        # Configurar estilo GEPEE/MRS
+        # Configurar estilo GEEE/MRS
         self.setup_corporate_style()
         
         self.current_generator = None
@@ -1067,7 +1066,7 @@ class FDSFormGenerator:
             print(f"Aviso: Algumas configurações de estilo podem não estar disponíveis: {e}")
     
     def create_widgets(self):
-        """Cria os widgets do formulário com design corporativo GEPEE/MRS"""
+        """Cria os widgets do formulário com design corporativo GEEE/MRS"""
         
         # === HEADER CORPORATIVO ===
         header_frame = tk.Frame(self.root, bg='#1e3a5f', height=110)  # Aumentado de 90 para 110
@@ -1078,7 +1077,7 @@ class FDSFormGenerator:
         title_container = tk.Frame(header_frame, bg='#1e3a5f')
         title_container.pack(side=tk.LEFT, padx=25, pady=5)  # Aumentado padding vertical
         
-        # Adicionar Logo GEPEE
+        # Adicionar Logo GEEE
         try:
             # Carregar logo
             logo_path = os.path.join(os.path.dirname(__file__), "logo.png")
@@ -1101,7 +1100,7 @@ class FDSFormGenerator:
                 text_frame = tk.Frame(logo_text_frame, bg='#1e3a5f')
                 text_frame.pack(side=tk.LEFT)
                 
-                # Título principal (sem GEPEE)
+                # Título principal (sem GEEE)
                 title_label = tk.Label(text_frame, 
                                       text="Praxis", 
                                       font=('Segoe UI', 18, 'bold'),
@@ -1168,7 +1167,7 @@ class FDSFormGenerator:
 
         # Texto do rodapé 
         footer_label = tk.Label(footer_content, 
-                            text="GEPEE - Gerência de Engenharia e Projetos de Eletroeletrônica | MRS Logística © 2025", 
+                            text="GEEE - Gerência de Engenharia de Eletroeletrônica | MRS Logística © 2026", 
                             font=('Segoe UI', 8),
                             fg='#7bb3f0', 
                             bg='#1e3a5f')
@@ -1371,7 +1370,7 @@ class FDSFormGenerator:
 
     def _create_text_only_header(self, title_container):
         """Cria header apenas com texto (fallback)"""
-        # Título principal (sem GEPEE)
+        # Título principal (sem GEEE)
         title_label = tk.Label(title_container, 
                               text="Praxis", 
                               font=('Segoe UI', 18, 'bold'),
@@ -1607,7 +1606,7 @@ class FDSFormGenerator:
                  font=('Segoe UI', 9, 'bold'), style='Corporate.TLabel').pack(side=tk.LEFT, padx=(0, 10))
         
         self.search_var = tk.StringVar()
-        self.search_var.trace('w', self.filter_elements_tree)
+        self.search_var.trace_add('write', self.filter_elements_tree)
         search_entry = ttk.Entry(search_frame, textvariable=self.search_var, 
                                style='Corporate.TEntry', font=('Segoe UI', 9), width=20)
         search_entry.pack(side=tk.LEFT, padx=(0, 10))
@@ -2085,7 +2084,7 @@ class FDSFormGenerator:
             
             # *** NOVO: Adicionar trace para atualizar nome do FDS ***
             if field_name == "FdsName":
-                var.trace('w', lambda *args: self.update_trackplan_fds_name())
+                var.trace_add('write', lambda *args: self.update_trackplan_fds_name())
 
         # Armazenar referência
         self.form_fields[field_name] = var
@@ -4329,7 +4328,7 @@ class FDSFormGenerator:
         self.slot_id_entry.bind('<KP_Enter>', lambda e: self.apply_slot_changes())
 
         # Forçar prefixo de ID conforme tipo (Aeb=1..., IoExb=5..., Com=0)
-        self.slot_id_var.trace('w', self._enforce_slot_id_prefix_trace)
+        self.slot_id_var.trace_add('write', self._enforce_slot_id_prefix_trace)
 
         # Campos automáticos (read-only) que aparecem conforme o tipo
         # Nome do componente
@@ -7327,7 +7326,7 @@ class FDSFormGenerator:
         """Cria janela de configuração completa para FMA"""
         self.fma_config_window = tk.Toplevel(self.root)
         self.fma_config_window.title(f"Configuração FMA - {self.current_fma_element.get('name', 'Sem nome')}")
-        self.fma_config_window.geometry("700x800")
+        self.fma_config_window.geometry("600x570")
         self.fma_config_window.transient(self.root)
         
         self.fma_config_window.protocol("WM_DELETE_WINDOW", self.close_fma_config)
@@ -7379,7 +7378,7 @@ class FDSFormGenerator:
         fma_id_entry = ttk.Entry(basic_frame, textvariable=self.fma_id_var, width=15)
         fma_id_entry.grid(row=row, column=1, sticky="w", padx=10, pady=5)
 
-        self.fma_id_var.trace('w', self.update_fma_auto_fields)
+        self.fma_id_var.trace_add('write', self.update_fma_auto_fields)
 
         # Nome da FMA
         row += 1
@@ -7388,7 +7387,7 @@ class FDSFormGenerator:
         name_entry = ttk.Entry(basic_frame, textvariable=self.fma_name_var, width=15)
         name_entry.grid(row=row, column=1, sticky="w", padx=10, pady=5)
         
-        self.fma_name_var.trace('w', self.update_fma_auto_fields)
+        self.fma_name_var.trace_add('write', self.update_fma_auto_fields)
         # Ângulo da FMA
         row += 1
         ttk.Label(basic_frame, text="Ângulo:", font=("Arial", 9, "bold")).grid(row=row, column=0, sticky="w", pady=5)
@@ -7396,7 +7395,7 @@ class FDSFormGenerator:
         angle_combo = ttk.Combobox(basic_frame, textvariable=self.fma_angle_var, values=['0', '90', '180', '270'], width=10, state="readonly")
         angle_combo.grid(row=row, column=1, sticky="w", padx=10, pady=5)
         # Atualizar ângulo em tempo real
-        self.fma_angle_var.trace('w', self.update_fma_angle_on_canvas)
+        self.fma_angle_var.trace_add('write', self.update_fma_angle_on_canvas)
         
         # Posição (somente leitura)
         row += 1
@@ -8812,7 +8811,7 @@ class FDSFormGenerator:
         self.slot_id_entry = id_entry
 
         # Bind para atualizar campos automáticos quando ID mudar
-        self.sensor_id_var.trace('w', self.update_sensor_auto_fields)
+        self.sensor_id_var.trace_add('write', self.update_sensor_auto_fields)
         
         # Nome do Sensor (Gerado automaticamente - somente leitura)
         row += 1
@@ -9741,319 +9740,6 @@ class FDSFormGenerator:
 
         messagebox.showinfo("Sucesso", f"Coluna {column} removida ({len(elements_in_column)} elementos removidos, {moved_elements} elementos movidos)")
 
-    def update_element_visual_position(self, element):
-        """Atualiza a posição visual de um elemento no canvas"""
-        new_x = element['x'] * self.grid_size + self.grid_size
-        new_y = element['y'] * self.grid_size + self.grid_size
-        
-        try:
-            # Atualizar posição do elemento principal
-            if 'canvas_id' in element:
-                canvas_id = element['canvas_id']
-                element_type = element.get('type', 'unknown')
-                
-                if element_type == 'rail' and element.get('rail_type') != 'SWITCH':
-                    # Trilho comum é um retângulo (4 coordenadas)
-                    self.trackplan_canvas.coords(canvas_id, 
-                                               new_x + 5, new_y + 12, 
-                                               new_x + 25, new_y + 18)
-                elif element_type == 'sensor':
-                    # Sensor é um oval (4 coordenadas)
-                    self.trackplan_canvas.coords(canvas_id, 
-                                               new_x + 10, new_y + 10, 
-                                               new_x + 20, new_y + 20)
-                elif element_type == 'switch' or (element_type == 'rail' and element.get('rail_type') == 'SWITCH'):
-                    # Switch é um polígono (coordenadas múltiplas)
-                    self.trackplan_canvas.coords(canvas_id,
-                                               new_x + 15, new_y + 5, 
-                                               new_x + 25, new_y + 15,
-                                               new_x + 15, new_y + 25, 
-                                               new_x + 5, new_y + 15)
-                elif element_type == 'fma':
-                    # FMA é um retângulo (4 coordenadas)
-                    self.trackplan_canvas.coords(canvas_id, 
-                                               new_x + 5, new_y + 12, 
-                                               new_x + 25, new_y + 18)
-                else:
-                    # Tipo desconhecido - tentar como retângulo padrão
-                    try:
-                        self.trackplan_canvas.coords(canvas_id, 
-                                                   new_x, new_y, 
-                                                   new_x + self.grid_size, new_y + self.grid_size)
-                    except:
-                        print(f"Não foi possível atualizar elemento do tipo {element_type}")
-            
-            # Atualizar múltiplos canvas_ids se existirem (trilhos compostos)
-            if 'canvas_ids' in element:
-                for canvas_id in element['canvas_ids']:
-                    try:
-                        # Para trilhos compostos, tentar atualizar como retângulo padrão
-                        self.trackplan_canvas.coords(canvas_id, 
-                                                   new_x + 5, new_y + 12, 
-                                                   new_x + 25, new_y + 18)
-                    except:
-                        print(f"Não foi possível atualizar canvas_id {canvas_id}")
-            
-            # Atualizar diag_id se existir (switches)
-            if 'diag_id' in element and element['diag_id']:
-                try:
-                    # Linha diagonal do switch
-                    self.trackplan_canvas.coords(element['diag_id'],
-                                               new_x + 10, new_y + 10,
-                                               new_x + 20, new_y + 20)
-                except:
-                    print(f"Não foi possível atualizar diag_id do switch")
-            
-            # Atualizar posição do texto se existir
-            if 'text_id' in element:
-                text_x = new_x + self.grid_size // 2
-                text_y = new_y + self.grid_size // 2
-                # Texto sempre usa 2 coordenadas
-                self.trackplan_canvas.coords(element['text_id'], text_x, text_y)
-            
-            # Atualizar destaque se existir
-            if 'highlight_id' in element:
-                # Destaque é sempre um retângulo (4 coordenadas)
-                self.trackplan_canvas.coords(element['highlight_id'], 
-                                           new_x, new_y,
-                                           new_x + self.grid_size, new_y + self.grid_size)
-                                           
-        except Exception as e:
-            print(f"Erro ao atualizar posição visual do elemento {element.get('type', 'unknown')}: {e}")
-            print(f"Elemento: {element.get('id', 'sem ID')} em ({element['x']}, {element['y']})")
-    
-    def redraw_all_elements(self):
-        """Redesenha todos os elementos no canvas nas suas posições atuais usando as imagens corretas"""
-        self.trackplan_canvas.delete("selection_highlight")
-        for element in self.trackplan_elements:
-            if 'highlight_id' in element:
-                del element['highlight_id']
-        # Primeiro, remover todos os elementos visuais do canvas
-        self.trackplan_canvas.delete("rail")
-        self.trackplan_canvas.delete("sensor")
-        self.trackplan_canvas.delete("switch")
-        self.trackplan_canvas.delete("fma")
-        self.trackplan_canvas.delete("link")
-        
-        # Redesenhar cada elemento na sua posição atual usando as funções de criação
-        for element in self.trackplan_elements:
-            try:
-                element_type = element.get('type', 'unknown')
-                x = element.get('x', 0)
-                y = element.get('y', 0)
-                angle = element.get('angle', 0)
-                mirror = element.get('mirror', 0)
-                rail_type = element.get('rail_type', None)
-                                
-                # Calcular posição no canvas (usar a mesma lógica das funções de criação)
-                canvas_x = (x + 1) * self.grid_size + self.grid_size // 2
-                canvas_y = (y + 1) * self.grid_size + self.grid_size // 2
-                
-                # Redesenhar baseado no tipo usando as mesmas funções de criação
-                if element_type == 'rail' and element.get('rail_type') != 'SWITCH':
-                    print(f"       📏 Renderizando como TRILHO COMUM")
-                    # Usar a mesma lógica da função add_rail_element
-                    if mirror:  # Ângulos simples sempre usam mirror 0
-                        image_key = f"rail_{angle}_{mirror}"
-                    else:  # Ângulos estruturais usam o mirror selecionado
-                        image_key = f"rail_{angle}_0"
-                        
-                    if hasattr(self, 'element_images') and image_key in self.element_images:
-                        # Usar imagem
-                        rail_id = self.trackplan_canvas.create_image(
-                            canvas_x, canvas_y, 
-                            image=self.element_images[image_key], 
-                            tags="rail"
-                        )
-                        element['canvas_ids'] = [rail_id]
-                    else:
-                        # Usar desenho por linhas
-                        if not mirror:
-                            effective_mirror = 0
-                        else:
-                            effective_mirror = mirror
-                            
-                        line_coords_list = self.get_rail_line_coords(canvas_x, canvas_y, angle, effective_mirror)
-                        rail_ids = []
-                        
-                        for line_coords in line_coords_list:
-                            rail_id = self.trackplan_canvas.create_line(*line_coords, fill="black", width=3, tags="rail")
-                            rail_ids.append(rail_id)
-                        
-                        element['canvas_ids'] = rail_ids
-                    
-                elif element_type == 'sensor':
-                    # Usar formato padrão para imagens normais (sem direção)
-                    image_key = f"sensor_{angle}"
-                    
-                    if hasattr(self, 'element_images') and image_key in self.element_images:
-                        # Usar imagem normal
-                        line_id = self.trackplan_canvas.create_image(
-                            canvas_x, canvas_y, 
-                            image=self.element_images[image_key], 
-                            tags="sensor"
-                        )
-                        element['canvas_id'] = line_id
-                        element['symbol_id'] = None
-                    else:
-                        # Usar desenho por linhas
-                        line_coords = self.get_sensor_line_coords(canvas_x, canvas_y, angle)
-                        symbol_coords = self.get_sensor_symbol_coords(canvas_x, canvas_y, angle)
-                        
-                        line_id = self.trackplan_canvas.create_line(*line_coords, fill="red", width=2, tags="sensor")
-                        symbol_id = self.trackplan_canvas.create_oval(*symbol_coords, fill="red", outline="red", tags="sensor")
-                        
-                        element['canvas_id'] = line_id
-                        element['symbol_id'] = symbol_id
-                    
-                elif element_type == 'switch' or (element_type == 'rail' and element.get('rail_type') == 'SWITCH'):
-                    # Usar a mesma lógica da função add_switch_element
-                    image_key = f"switch_{angle}_{mirror}"
-                    if hasattr(self, 'element_images') and image_key in self.element_images:
-                        # Usar imagem
-                        main_id = self.trackplan_canvas.create_image(
-                            canvas_x, canvas_y, 
-                            image=self.element_images[image_key], 
-                            tags="switch"
-                        )
-                        element['canvas_id'] = main_id
-                        element['diag_id'] = None
-                    else:
-                        # Usar desenho por linhas
-                        main_line, diag_line = self.get_switch_coords(canvas_x, canvas_y, angle, mirror)
-                        
-                        main_id = self.trackplan_canvas.create_line(*main_line, fill="black", width=3, tags="switch")
-                        diag_id = self.trackplan_canvas.create_line(*diag_line, fill="blue", width=2, tags="switch")
-                        
-                        element['canvas_id'] = main_id
-                        element['diag_id'] = diag_id
-                    
-                elif element_type == 'fma':
-                    # SEMPRE usar imagem com texto integrado
-                    fma_name = element.get('name', f"FMA{element.get('id', '?')}")
-                    
-                    # Verificar se já existe imagem gerada
-                    if not hasattr(self, 'element_images'):
-                        self.element_images = {}
-                        
-                    # SEMPRE gerar imagem com texto integrado
-                    image_key = f"fma_{angle}_{fma_name}"
-                    
-                    # Gerar imagem com texto se não existir
-                    if image_key not in self.element_images:
-                        custom_image = self.create_fma_image_with_integrated_text(angle, fma_name)
-                        if custom_image:
-                            self.element_images[image_key] = custom_image
-                    
-                    # Usar imagem com texto
-                    if image_key in self.element_images:
-                        fma_id = self.trackplan_canvas.create_image(
-                            canvas_x, canvas_y, 
-                            image=self.element_images[image_key], 
-                            tags="fma"
-                        )
-                        element['canvas_id'] = fma_id
-                        element['box_id'] = None
-                        element['text_id'] = None
-                        element['image_key'] = image_key
-                    else:
-                        # Fallback: usar desenho por código
-                        line_coords = self.get_fma_line_coords_full(canvas_x, canvas_y, angle)
-                        line_id = self.trackplan_canvas.create_line(*line_coords, fill="black", width=4, tags="fma")
-                        
-                        box_coords = self.get_fma_box_coords_by_angle(canvas_x, canvas_y, angle, fma_name)
-                        box_id = self.trackplan_canvas.create_rectangle(*box_coords, 
-                            fill="white", outline="black", width=1, tags="fma")
-                        
-                        text_coords = self.get_fma_text_coords_by_angle(canvas_x, canvas_y, angle)
-                        text_id = self.trackplan_canvas.create_text(*text_coords, text=fma_name,
-                            font=("Arial", 6, "bold"), fill="black", tags="fma")
-                        
-                        element['canvas_id'] = line_id
-                        element['box_id'] = box_id
-                        element['text_id'] = text_id
-                elif element_type == 'link':
-                    image_key = f"link_{angle}"
-                    if hasattr(self, 'element_images') and image_key in self.element_images:
-                        link_id = self.trackplan_canvas.create_image(
-                            canvas_x, canvas_y,
-                            image=self.element_images[image_key],
-                            tags="links"
-                        )
-                        element['canvas_id'] = link_id
-                        element['symbol_id'] = None
-                    else:
-                        if not mirror:
-                            effective_mirror = 0
-                        else:
-                            effective_mirror = mirror
-                            
-                        line_coords_list = self.get_rail_line_coords(canvas_x, canvas_y, angle, effective_mirror)
-                        rail_ids = []
-                        
-                        for line_coords in line_coords_list:
-                            rail_id = self.trackplan_canvas.create_line(*line_coords, fill="black", width=3, tags="rail")
-                            rail_ids.append(rail_id)
-                        
-                        element['canvas_ids'] = rail_ids
-                else:
-                    print(f"Tipo de elemento desconhecido: {element_type}")
-                    
-            except Exception as e:
-                print(f"Erro ao redesenhar elemento {element.get('type', 'unknown')}: {e}")
-        for element in self.selected_elements:
-            if isinstance(element, dict):
-                self.highlight_element_for_selection(element)
-
-    def _update_highlight_positions(self):
-        """Atualiza a posição dos highlights após mover elementos"""
-        for element in self.trackplan_elements:
-            if 'highlight_id' in element:
-                # Recalcula a posição do destaque
-                canvas_x = (element['x'] + 1) * self.grid_size
-                canvas_y = (element['y'] + 1) * self.grid_size
-                self.trackplan_canvas.coords(
-                    element['highlight_id'],
-                    canvas_x, canvas_y,
-                    canvas_x + self.grid_size, canvas_y + self.grid_size
-                )
-
-    def copy_row(self, row):
-        """Copia uma linha inteira"""
-        # Coletar todos os elementos da linha
-        row_elements = []
-        for x in range(int(self.width_var.get()) + 1):
-            element_at_position = None
-            for element in self.trackplan_elements:
-                if element.get('x') == x and element.get('y') == row:
-                    element_at_position = element
-                    break
-            
-            if element_at_position:
-                element_copy = {
-                    'type': element_at_position['type'],
-                    'angle': element_at_position.get('angle', 0),
-                    'mirror': element_at_position.get('mirror', 0),
-                    'name': element_at_position.get('name', ''),
-                    'sensors': element_at_position.get('sensors', []).copy(),
-                    'rails': element_at_position.get('rails', []).copy(),
-                    'position': element_at_position.get('position', 'right'),  # Para sensores
-                    'x': x,  # Posição relativa na linha
-                    'y': 0   # Será ajustado na colagem
-                }
-                row_elements.append(element_copy)
-            else:
-                # Posição vazia
-                row_elements.append(None)
-        
-        # Salvar no clipboard específico
-        self.row_column_clipboard = {
-            'type': 'row',
-            'data': row_elements
-        }
-        
-        messagebox.showinfo("Sucesso", f"Linha {row} copiada ({len([e for e in row_elements if e is not None])} elementos)")
-    
     def copy_column(self, column):
         """Copia uma coluna inteira"""
         # Coletar todos os elementos da coluna
@@ -10527,22 +10213,6 @@ class FDSFormGenerator:
             except ValueError:
                 # Se o ângulo atual não estiver na lista, usar o último
                 self.angle_var.set(str(available_angles[-1]))
-    
-    def get_image_key_for_element(self, element_type, angle, mirror):
-        """Retorna a chave da imagem para o elemento"""
-        if element_type == "rail":
-            return f"rail_{angle}_{mirror}"
-        elif element_type == "link":
-            return f"link_{angle}"
-        elif element_type == "switch":
-            return f"switch_{angle}_{mirror}"
-        elif element_type == "sensor":
-            return f"sensor_{angle}"
-        elif element_type == "fma":
-            return f"fma_{angle}"
-        elif element_type == "crossing":
-            return f"crossing_{angle}"
-        return None
     
     def create_fma_image_with_integrated_text(self, angle, text):
         """
@@ -13486,14 +13156,6 @@ class FDSFormGenerator:
             return None, None
         base = s[1:] if s.startswith('2') and len(s) > 1 else s
         return f"3{base}", f"4{base}"
-
-    def map_sensor_angle_to_fma_angle(self, angle):
-        """Mapeia ângulo do sensor para ângulo cardinal da FMA (0 ou 90)."""
-        try:
-            a = int(angle)
-        except Exception:
-            a = 0
-        return 90 if a in (90, 270) else 0
 
     def ensure_sensor_fmas(self, sensor_element, has_fma, old_id=None):
         """Cria/atualiza/remove FMAs padrão fma0/fma1 para um sensor, apenas em memória.
@@ -17183,7 +16845,7 @@ VERIFY  48:""")
         entry_widget.bind('<FocusIn>', on_focus_in)
         entry_widget.bind('<FocusOut>', on_focus_out)
 
-        self.help_search_var.trace('w', on_text_change)
+        self.help_search_var.trace_add('write', on_text_change)
 
     def filter_help_topics(self, *args):
         """Filtra tópicos da ajuda baseado na busca"""
