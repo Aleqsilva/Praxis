@@ -857,7 +857,7 @@ class FDSFormGenerator:
         self.root = root
         self.fds_model = fds_model  # Armazena o modelo FDS selecionado
         self.root.title(f"Praxis - {fds_model} - Sistema de Configuração Ferroviária")
-        self.root.geometry("1400x900")
+        self.root.geometry("1400x800")
         self.root.configure(bg='#f0f0f0')
 
         self._default_gateway_row = None
@@ -1064,8 +1064,36 @@ class FDSFormGenerator:
             
         except Exception as e:
             print(f"Aviso: Algumas configurações de estilo podem não estar disponíveis: {e}")
-    
+
+    def create_setup_bar(self):
+        menu_bar = tk.Menu(self.root)
+
+        file_menu = tk.Menu(menu_bar, tearoff=0)
+
+        menu_abrir = tk.Menu(file_menu, tearoff=0)
+        menu_abrir.add_command(label="FdsConfig.xml", command=self.load_fds_config)
+        menu_abrir.add_command(label="Trackplan.xml", command=self.load_trackplan)
+        menu_abrir.add_command(label="FdsRecovery.zip", command=self.load_fds_recovery)
+
+        menu_salvar = tk.Menu(file_menu, tearoff=0)
+        menu_salvar.add_command(label="FdsConfig.xml", command=self.save_fds_config)
+        menu_salvar.add_command(label="Trackplan.xml", command=self.save_trackplan)
+        menu_salvar.add_command(label="FdsRecovery.zip", command=self.save_all_files)
+
+        file_menu.add_cascade(label="Abrir", menu=menu_abrir)
+        file_menu.add_cascade(label="Salvar", menu=menu_salvar)
+
+        file_menu.add_separator()
+        file_menu.add_command(label="Sair", command=self.root.quit)
+
+        menu_bar.add_cascade(label="Arquivo", menu=file_menu)
+
+        self.root.config(menu=menu_bar)
+
     def create_widgets(self):
+
+        self.create_setup_bar()
+
         """Cria os widgets do formulário com design corporativo GEEE/MRS"""
         
         # === HEADER CORPORATIVO ===
@@ -1101,12 +1129,12 @@ class FDSFormGenerator:
                 text_frame.pack(side=tk.LEFT)
                 
                 # Título principal (sem GEEE)
-                title_label = tk.Label(text_frame, 
-                                      text="Praxis", 
+                self.title_label = tk.Label(text_frame, 
+                                      text=f"Praxis - {self.fds_model}", 
                                       font=('Segoe UI', 18, 'bold'),
                                       fg='#FFFF00', 
                                       bg='#1e3a5f')
-                title_label.pack(anchor="w")
+                self.title_label.pack(anchor="w")
                 
                 # Subtítulo
                 subtitle_label = tk.Label(text_frame, 
@@ -1371,8 +1399,9 @@ class FDSFormGenerator:
     def _create_text_only_header(self, title_container):
         """Cria header apenas com texto (fallback)"""
         # Título principal (sem GEEE)
+
         title_label = tk.Label(title_container, 
-                              text="Praxis", 
+                              text=f"Praxis - {self.fds_model}", 
                               font=('Segoe UI', 18, 'bold'),
                               fg='#FFFF00', 
                               bg='#1e3a5f')
@@ -1417,6 +1446,7 @@ class FDSFormGenerator:
         self.fds_model = new_model
         try:
             self.root.title(f"Praxis - {new_model} - Sistema de Configuração Ferroviária")
+            self.title_label.config(text=f"Praxis - {new_model}")
         except Exception:
             pass
 
@@ -1685,17 +1715,32 @@ class FDSFormGenerator:
         # Inicializar gerador
         self.initialize_generator()
         
-    def load_fds_config(self):
+
+    def load_fds_config(self, filename=None):
         """Carrega um FdsConfig.xml e preenche os campos do formulário"""
-        filename = filedialog.askopenfilename(
-            title="Carregar FdsConfig.xml",
-            defaultextension=".xml",
-            filetypes=[("XML files", "*.xml"), ("All files", "*.*")]
-        )
+        if filename is None:
+            filename = filedialog.askopenfilename(
+                title="Carregar FdsConfig.xml",
+                defaultextension=".xml",
+                filetypes=[("XML files", "*.xml"), ("All files", "*.*")]
+            )
+
         if not filename:
             return
+
         try:
-            tree = ET.parse(filename)
+            # String de caminho
+            if isinstance(filename, str):
+                tree = ET.parse(filename)
+
+            # Bytes (conteúdo vindo do zip)
+            elif isinstance(filename, bytes):
+                tree = ET.ElementTree(ET.fromstring(filename))
+
+            # File-like object
+            else:
+                tree = ET.parse(filename)
+
             root = tree.getroot()
 
             # Armazenar o XML carregado
@@ -3513,6 +3558,8 @@ class FDSFormGenerator:
             elif key == 'delete':
                 self.delete_selected_elements()
                 return
+            elif key == 'x':
+                self.set_tool_shortcut("crossing")
             else:
                 return
             
@@ -4307,7 +4354,7 @@ class FDSFormGenerator:
         ttk.Label(properties_frame, text="Tipo:", font=("Arial", 9, "bold")).grid(row=row, column=0, sticky="w", pady=5)
         self.slot_type_var = tk.StringVar()
         type_combo = ttk.Combobox(properties_frame, textvariable=self.slot_type_var, 
-                                 values=["EmptySlot", "Psc", "Com", "Aeb", "IoExb"], width=15, state="readonly")
+                                 values=["EmptySlot","Com", "Aeb", "Aeb+IoExb"], width=15, state="readonly")
         type_combo.grid(row=row, column=1, sticky="w", padx=5, pady=5)
         type_combo.bind("<<ComboboxSelected>>", self.on_slot_type_change)
 
@@ -4600,19 +4647,33 @@ class FDSFormGenerator:
         finally:
             self._enforcing_slot_id = False
 
-    def load_cubicles_from_xml(self):
+    def load_cubicles_from_xml(self, filename=None):
         """Carrega cubicles de um arquivo Trackplan.xml"""
-        filename = filedialog.askopenfilename(
-            title="Carregar Trackplan.xml",
-            defaultextension=".xml",
-            filetypes=[("XML files", "*.xml"), ("All files", "*.*")]
-        )
+        if filename is None:
+            filename = filedialog.askopenfilename(
+                title="Carregar Trackplan.xml",
+                defaultextension=".xml",
+                filetypes=[("XML files", "*.xml"), ("All files", "*.*")]
+            )
+
         if not filename:
             return
-        
+
         try:
-            tree = ET.parse(filename)
+            # String de caminho
+            if isinstance(filename, str):
+                tree = ET.parse(filename)
+
+            # Bytes (conteúdo vindo do zip)
+            elif isinstance(filename, bytes):
+                tree = ET.ElementTree(ET.fromstring(filename))
+
+            # File-like object
+            else:
+                tree = ET.parse(filename)
+
             root = tree.getroot()
+
             # Procurar seção de Cubicles
             if root.tag == 'Cubicles':
                 cubicles_section = root
@@ -7506,12 +7567,12 @@ class FDSFormGenerator:
         """Wrapper para update_fma_auto_fields que considera o tipo de FMA"""
         self.update_fma_auto_fields()
 
-    def update_fma_name_on_canvas(self, *args):
+    def update_fma_name_on_canvas(self, fma_name):
         """Atualiza o nome da FMA no canvas em tempo real"""
         if not self.current_fma_element:
             return
-        
-        new_name = self.fma_name_var.get()
+
+        new_name = fma_name if fma_name else self.fma_name_var.get()
         self.current_fma_element['name'] = new_name
         
         # Regenerar a imagem da FMA com o novo nome
@@ -8442,11 +8503,25 @@ class FDSFormGenerator:
                 }
 
                 if picked_type == 'crossing':
+                    for elm in self.trackplan_elements:
+                        if str(elm.get('id')) == eid:
+                            cross_angle = int(elm.get('angle', 0))
+                    
                     source = None
-                    for el in self.trackplan_elements:
-                        if str(el.get('id')) == eid and el.get('type') == 'crossing':
-                            source = el
-                            break
+                    
+                    self.crossing_way_window = tk.Toplevel(self.root)
+                    self.crossing_way_window.title("Selecionar Caminhos do Cruzamento")
+                    self.crossing_way_window.geometry("220x90+100+100")
+                    self.crossing_way_window.attributes('-topmost', True)
+                    self.crossing_way_window.resizable(False, False)
+                    # Conteúdo simples
+                   
+                    frm = ttk.Frame(self.crossing_way_window, padding=8)
+                    frm.pack(fill='both', expand=True)
+                    lbl = ttk.Label(frm, text="Cruzamento selecionado!\nDefina os caminhos:")
+                    lbl.pack(anchor='w', pady=(0,6))
+                    btns = ttk.Frame(frm)
+
 
                     if source is not None:
                         item['from'] = source.get('from', 0)
@@ -8619,7 +8694,7 @@ class FDSFormGenerator:
         
         # Atualizar dados da FMA
         self.current_fma_element['id'] = fma_id
-        self.current_fma_element['name'] = self.fma_name_var.get()
+        self.current_fma_element['name'] = self.fma_name_var.get().upper()
         self.current_fma_element['angle'] = int(self.fma_angle_var.get())
         self.current_fma_element['ref_id'] = self.fma_ref_id_var.get()
         self.current_fma_element['fma_type'] = 'FMA1' if is_fma1 else 'FMA2'
@@ -8875,6 +8950,8 @@ class FDSFormGenerator:
         fma_id = self.fma_id_var.get().strip()
         fma_name = self.fma_name_var.get().strip().upper()
 
+        print(f"DEBUG: update_fma_auto_fields chamado com fma_id='{fma_id}', fma_name='{fma_name}'")
+
         # Determinar se é FMA1 ou FMA2 baseado no checkbox
         is_fma1 = True  # Valor padrão
         if fma_check and hasattr(fma_check, 'instate'):
@@ -8912,7 +8989,7 @@ class FDSFormGenerator:
                 self.current_fma_element['fma_type'] = 'FMA1' if is_fma1 else 'FMA2'
                 
                 # Atualizar visualização em tempo real
-                self.update_fma_name_on_canvas()                
+                self.update_fma_name_on_canvas(fma_name)                
         else:
             # Limpar campos se ID estiver vazio
             self.fma_name_var.set('')
@@ -10406,14 +10483,36 @@ class FDSFormGenerator:
             print(f"Erro ao criar imagem FMA AZUL com texto '{text}' (ângulo {angle}°): {e}")
             return None
     
-    def load_trackplan(self):
+    def load_trackplan(self, filename=None):
         """Carrega um trackplan XML de forma organizada e eficiente"""
-        filename = self._get_trackplan_filename()
+        if filename is None:
+            filename = filedialog.askopenfilename(
+                title="Carregar Trackplan.xml",
+                defaultextension=".xml",
+                filetypes=[("XML files", "*.xml"), ("All files", "*.*")]
+            )
+
         if not filename:
             return
-        
+
         try:
-            xml_data = self._parse_trackplan_xml(filename)
+            # String de caminho
+            if isinstance(filename, str):
+                tree = ET.parse(filename)
+
+            # Bytes (conteúdo vindo do zip)
+            elif isinstance(filename, bytes):
+                tree = ET.ElementTree(ET.fromstring(filename))
+
+            # File-like object
+            else:
+                tree = ET.parse(filename)
+
+            root = tree.getroot()
+            
+            # Estrutura de dados organizada
+            
+            xml_data = TrackplanXMLData(root, getattr(filename, 'name', 'from_zip'))
             
             # Limpar estado atual
             self._clear_current_trackplan()
@@ -10435,6 +10534,35 @@ class FDSFormGenerator:
             self.refresh_fma_test_window()
         except Exception as e:
             self._handle_loading_error(e)
+
+    def load_fds_recovery(self):
+        """Carrega o FdsRecovery.zip para análise de um projeto completo"""
+        try:
+            filename = filedialog.askopenfilename(
+                title="Carregar FdsRecovery.zip",
+                defaultextension=".zip",
+                filetypes=[("ZIP files", "*.zip"), ("All files", "*.*")]
+            )
+
+            if not filename:
+                return
+
+            with zipfile.ZipFile(filename, 'r') as zip_ref:
+                xml_files = [f for f in zip_ref.namelist() if f.endswith(".xml")]
+
+                for xml_name in xml_files:
+                    with zip_ref.open(xml_name) as f:
+                        conteudoxml = f.read()
+                        if "FdsConfig" in xml_name:
+                            self.load_fds_config(conteudoxml)
+
+                        elif "Trackplan" in xml_name:
+                            self.load_trackplan(conteudoxml)
+                            self.load_cubicles_from_xml(conteudoxml)
+
+        except Exception as e:
+            messagebox.showerror("Erro", f"Falha ao carregar FdsRecovery.zip: {e}")
+            
 
     def _strip_prefix(self, raw_id: str):
         """Remove prefixos de tipo (2=sensor,3/4=FMA) para cálculo de base."""
@@ -10471,16 +10599,6 @@ class FDSFormGenerator:
             defaultextension=".xml",
             filetypes=[("XML files", "*.xml"), ("All files", "*.*")]
         )
-    
-    def _parse_trackplan_xml(self, filename):
-        """Parse do XML do trackplan e extração de dados estruturados"""
-        import xml.etree.ElementTree as ET
-        tree = ET.parse(filename)
-        root = tree.getroot()
-        
-        # Estrutura de dados organizada
-        xml_data = TrackplanXMLData(root, filename)        
-        return xml_data
     
     def _clear_current_trackplan(self):
         """Limpa o trackplan atual com limpeza robusta"""
@@ -10771,7 +10889,7 @@ class FDSFormGenerator:
         
         # Mostrar resultado
         fma_count = len(xml_data.fmas)
-        messagebox.showinfo("Sucesso", f"Trackplan XML carregado de: {filename}\n{fma_count} FMAs carregadas com sucesso!")
+        messagebox.showinfo("Sucesso", f"Trackplan XML carregado! \n{fma_count} FMAs carregadas com sucesso!")
             
     def _find_rail_at_position(self, position):
         """Encontra rail real na posição especificada"""
