@@ -19,6 +19,9 @@ from datetime import datetime
 import ipaddress
 from collections import Counter
 import itertools
+import math
+
+from matplotlib.pyplot import draw
 
 # Garantir que imports locais (ex.: fds_config_generator.py) funcionem mesmo quando o app
 # é iniciado a partir de outro diretório.
@@ -51,6 +54,11 @@ except Exception:
     FDSConfigGenerator = None
     NetworkConfig = None
     StationConfig = None
+
+try:
+    from trackplan_api import TrackplanAPI as TrackplanService
+except Exception:
+    TrackplanService = None
 
 # === CLASSES AUXILIARES PARA TRACKPLAN ===
 
@@ -836,9 +844,13 @@ class IntelligentXMLGenerator:
         # Configuração detalhada com mirrors para FMAs
         fma_config = {
             0: (0, 0),       # FMA 0° → Rail 0° mirror 0
+            45: (270, 0),    # FMA 45° → Rail 270° mirror 0
             90: (180, 0),    # FMA 90° → Rail 180° mirror 0
+            135: (270, 1),   # FMA 135° → Rail 270° mirror 1
             180: (0, 0),     # FMA 180° → Rail 0° mirror 0
+            225: (270, 0),   # FMA 225° → Rail 270° mirror 0
             270: (180, 0),   # FMA 270° → Rail 180° mirror 0
+            315: (270, 1)    # FMA 315° → Rail 270° mirror 1
         }
         
         try:
@@ -1619,8 +1631,8 @@ class FDSFormGenerator:
                   style='Corporate.TButton').pack(side=tk.LEFT, padx=(0, 10))
         ttk.Button(btn_row1, text="➕ AEB", command=self.add_aeb, 
                   style='Corporate.TButton').pack(side=tk.LEFT, padx=(0, 10))
-        ttk.Button(btn_row1, text="➕ CountingHead", command=self.add_counting_head, 
-                  style='Corporate.TButton').pack(side=tk.LEFT, padx=(0, 10))
+        #ttk.Button(btn_row1, text="➕ CountingHead", command=self.add_counting_head, 
+        #          style='Corporate.TButton').pack(side=tk.LEFT, padx=(0, 10))
         ttk.Button(btn_row1, text="➕ TrackSection", command=self.add_track_section, 
                   style='Corporate.TButton').pack(side=tk.LEFT, padx=(0, 10))
         ttk.Button(btn_row1, text="➖ Remover Elementos", command=self.remove_elements, 
@@ -1720,7 +1732,7 @@ class FDSFormGenerator:
         """Carrega um FdsConfig.xml e preenche os campos do formulário"""
         if filename is None:
             filename = filedialog.askopenfilename(
-                title="Carregar FdsConfig.xml",
+                title="FdsConfig.xml não encontrado. Carregar FdsConfig.xml",
                 defaultextension=".xml",
                 filetypes=[("XML files", "*.xml"), ("All files", "*.*")]
             )
@@ -1946,7 +1958,7 @@ class FDSFormGenerator:
                     if form_name:
                         fds_name = form_name
                 except Exception as e:
-                    print(f"⚠️ Erro ao obter nome do formulário: {e}")
+                    print(f"Erro ao obter nome do formulário: {e}")
             
             # Nome padrão se nada foi encontrado
             if not fds_name:
@@ -4118,8 +4130,6 @@ class FDSFormGenerator:
             print("Tentando aplicar grade novamente em 500ms...")
             self.root.after(500, self.apply_grid)
     
-    # Método load_element_images removido - usar o método completo na linha ~6588
-    
     def create_cubicles_tab(self):
         """Cria a aba de programação de cubículos"""
         frame = ttk.Frame(self.notebook)
@@ -4602,7 +4612,7 @@ class FDSFormGenerator:
             if not hasattr(self, 'slot_type_var') or not hasattr(self, 'slot_id_var'):
                 return
             slot_type = self.slot_type_var.get()
-            if slot_type not in ('Aeb', 'IoExb','Com'):
+            if slot_type not in ('Aeb', 'IoExb', 'Com', 'Aeb+IoExb'):
                 return
 
             # Evitar recursão ao setar a StringVar
@@ -4611,7 +4621,8 @@ class FDSFormGenerator:
             self._enforcing_slot_id = True
 
             current = (self.slot_id_var.get() or "").strip()
-            if slot_type == 'Aeb':
+            if slot_type == 'Aeb' or slot_type == 'Aeb+IoExb':
+                # For combined case prefer AEB prefix
                 prefix = '1'
             elif slot_type == 'IoExb':
                 prefix = '5'
@@ -5341,7 +5352,7 @@ class FDSFormGenerator:
             except ValueError:
                 pass
                 
-        elif slot_type == 'Aeb':
+        elif slot_type in ('Aeb', 'Aeb+IoExb'):
             # AEB: ID formato 1XXXX
             # canId = últimos 4 dígitos
             # name = "AEB" + canId
@@ -5419,17 +5430,17 @@ class FDSFormGenerator:
         
         # Mostrar campos relevantes
         row = 3
-        if slot_type in ['Com', 'Aeb', 'IoExb']:
+        if slot_type in ['Com', 'Aeb', 'IoExb', 'Aeb+IoExb']:
             self.name_label.grid(row=row, column=0, sticky="w", pady=5)
             self.name_entry.grid(row=row, column=1, sticky="w", padx=5, pady=5)
             row += 1
         
-        if slot_type in ['Com', 'Aeb']:
+        if slot_type in ['Com', 'Aeb', 'Aeb+IoExb']:
             self.can_id_label.grid(row=row, column=0, sticky="w", pady=5)
             self.can_id_entry.grid(row=row, column=1, sticky="w", padx=5, pady=5)
             row += 1
         
-        if slot_type in ['Aeb', 'IoExb']:
+        if slot_type in ['Aeb', 'IoExb', 'Aeb+IoExb']:
             self.ref_id_label.grid(row=row, column=0, sticky="w", pady=5)
             self.ref_id_entry.grid(row=row, column=1, sticky="w", padx=5, pady=5)
     
@@ -5482,6 +5493,43 @@ class FDSFormGenerator:
         # Os demais campos são preenchidos automaticamente pelo on_slot_id_change
         # Apenas garantir que estão atualizados
         slot_type = slot['type']
+
+        # Se o tipo for combinado Aeb+IoExb devemos criar dois elementos lógicos
+        if slot_type == 'Aeb+IoExb':
+            # Validar se há espaço: não pode ser o último slot do backplane
+            try:
+                bp_size = int(self.bp_size_var.get())
+            except Exception:
+                bp_size = len(self.rack_slots)
+
+            slot_index = int(self.selected_slot)
+            if slot_index >= bp_size:
+                messagebox.showerror("Erro", "Não há espaço suficiente: último slot não comporta Aeb+IoExb (são dois dispositivos).")
+                return
+
+            # Extrair base id e gera os campos para ambos
+            # Reutilizar lógica de on_slot_id_change para preencher name/canId/refId no slot atual
+            self.on_slot_id_change()
+
+            # Criar representação para IoExb no slot seguinte se estiver vazio
+            next_slot_index = str(slot_index + 1)
+            next_slot = self.rack_slots.get(next_slot_index)
+            if not next_slot or next_slot.get('type', 'EmptySlot') != 'EmptySlot':
+                messagebox.showerror("Erro", "O slot seguinte deve estar vazio para acomodar IoExb do par Aeb+IoExb.")
+                return
+
+            # Preencher slot atual como Aeb (já feito por on_slot_id_change)
+            slot['type'] = 'Aeb'
+            # Criar payload para IoExb no próximo slot usando base_id inferido
+            base_id = self._get_slot_base_id(slot)
+            if base_id is None:
+                messagebox.showerror("Erro", "Não foi possível inferir o base_id para criar IoExb.")
+                return
+
+            io_payload = self._slot_payload_for('IoExb', base_id)
+            # Aplicar ao slot seguinte
+            self.rack_slots[next_slot_index] = io_payload
+            # Atualizar UI e persistência abaixo
         
         if slot_type == 'Com':
             # COM já tem type_com e redundant definidos automaticamente
@@ -7453,7 +7501,7 @@ class FDSFormGenerator:
         row += 1
         ttk.Label(basic_frame, text="Ângulo:", font=("Arial", 9, "bold")).grid(row=row, column=0, sticky="w", pady=5)
         self.fma_angle_var = tk.StringVar(value=str(self.current_fma_element.get('angle', '0')))
-        angle_combo = ttk.Combobox(basic_frame, textvariable=self.fma_angle_var, values=['0', '90', '180', '270'], width=10, state="readonly")
+        angle_combo = ttk.Combobox(basic_frame, textvariable=self.fma_angle_var, values=['0', '90', '180', '270'] if self.fds_model == "FDS101" else ['0', '45', '90', '135', '180', '225', '270', '315'], width=10, state="readonly")
         angle_combo.grid(row=row, column=1, sticky="w", padx=10, pady=5)
         # Atualizar ângulo em tempo real
         self.fma_angle_var.trace_add('write', self.update_fma_angle_on_canvas)
@@ -8950,8 +8998,6 @@ class FDSFormGenerator:
         fma_id = self.fma_id_var.get().strip()
         fma_name = self.fma_name_var.get().strip().upper()
 
-        print(f"DEBUG: update_fma_auto_fields chamado com fma_id='{fma_id}', fma_name='{fma_name}'")
-
         # Determinar se é FMA1 ou FMA2 baseado no checkbox
         is_fma1 = True  # Valor padrão
         if fma_check and hasattr(fma_check, 'instate'):
@@ -10160,7 +10206,7 @@ class FDSFormGenerator:
                 # GERAR IMAGENS FMA DINAMICAMENTE PARA PREVIEW
                 # Implementando a ideia do usuário: criar FMAs com texto "FMA" durante o carregamento
                 fma_preview_count = 0
-                fma_angles = [0, 90, 180, 270]
+                fma_angles = [0, 90, 180, 270] if self.fds_model == "FDS101" else [0, 45, 90, 135, 180, 225, 270, 315]
                 for angle in fma_angles:
                     preview_key = f"fma_{angle}_PREV"
                     try:
@@ -10249,7 +10295,7 @@ class FDSFormGenerator:
             "rail": [0, 45, 90, 180, 225, 270, 315],
             "sensor": [0, 45, 90, 135, 180, 225, 270, 315],
             "switch": [0, 45, 90, 180, 225],
-            "fma": [0, 90, 180, 270],
+            "fma": [0, 90, 180, 270] if self.fds_model == "FDS101" else [0, 45, 90, 135, 180, 225, 270, 315],
             "link": [0, 90, 180, 270],
             "crossing": [0, 90 ,270]
         }
@@ -10275,7 +10321,7 @@ class FDSFormGenerator:
             "rail": [0, 45, 90, 180, 225, 270, 315],
             "sensor": [0, 45, 90, 135, 180, 225, 270, 315],
             "switch": [0, 45, 90, 180, 225],
-            "fma": [0, 90, 180, 270],
+            "fma": [0, 90, 180, 270] if self.fds_model == "FDS101" else [0, 45, 90, 135, 180, 225, 270, 315],
             "link": [0, 90, 180, 270],
             "crossing": [0, 90, 270]
         }
@@ -10290,18 +10336,8 @@ class FDSFormGenerator:
             except ValueError:
                 # Se o ângulo atual não estiver na lista, usar o último
                 self.angle_var.set(str(available_angles[-1]))
-    
+
     def create_fma_image_with_integrated_text(self, angle, text):
-        """
-        Cria uma imagem FMA personalizada com texto integrado nas posições especificadas
-        
-        Args:
-            angle: Ângulo da FMA (0, 90, 180, 270)  
-            text: Texto a ser integrado na imagem (ex: "2DAT", "1AT", etc)
-            
-        Returns:
-            ImageTk.PhotoImage pronto para uso no canvas ou None se erro
-        """
         try:
             from PIL import Image, ImageDraw, ImageFont, ImageTk
             
@@ -10312,9 +10348,13 @@ class FDSFormGenerator:
             # Definir posições dos quadrados de texto por ângulo - AJUSTADO POR ORIENTAÇÃO
             text_areas = {
                 0: {'x1': 2, 'y1': 18, 'x2': 29, 'y2': 28, 'rotation': 0},     # Ângulo 0° (subiu 1 pixel)
+                45: {'x1': -2, 'y1': 5, 'x2': 20, 'y2': 15, 'rotation': 135},    # Ângulo 135° (subiu 1 pixel)
                 90: {'x1': 18, 'y1': 2, 'x2': 28, 'y2': 29, 'rotation': 90},   # Ângulo 90° (esquerda 1 pixel)
+                135: {'x1': 10, 'y1': 15, 'x2': 32, 'y2': 25, 'rotation': 315},  # Ângulo 315° (esquerda 1 pixel)
                 180: {'x1': 2, 'y1': 3, 'x2': 29, 'y2': 13, 'rotation': 180},  # Ângulo 180° (desceu 1 pixel)
-                270: {'x1': 3, 'y1': 2, 'x2': 13, 'y2': 29, 'rotation': 270}   # Ângulo 270° (direita 1 pixel)
+                225: {'x1': 0, 'y1': 0, 'x2': 20, 'y2': 20, 'rotation': 135},   # Ângulo 135° (desceu 1 pixel)
+                270: {'x1': 3, 'y1': 2, 'x2': 13, 'y2': 29, 'rotation': 270},   # Ângulo 270° (direita 1 pixel)
+                315: {'x1': 2, 'y1': 3, 'x2': 13, 'y2': 28, 'rotation': 315}   # Ângulo 315° (direita 1 pixel)
             }
             
             if angle not in text_areas:
@@ -10323,33 +10363,57 @@ class FDSFormGenerator:
             area = text_areas[angle]
             
             # Desenhar linha principal baseada no ângulo - AJUSTADO 1 pixel para cima
-            if angle == 0:
-                # Linha horizontal: x=1,y=13 até x=29,y=17
-                for y in range(13, 17):
-                    draw.line([(1, y), (29, y)], fill=(0, 0, 0, 255), width=1)
-            elif angle == 90:
-                # Linha vertical equivalente: x=13,y=0 até x=17,y=29
-                for x in range(13, 17):
-                    draw.line([(x, 1), (x, 29)], fill=(0, 0, 0, 255), width=1)
-            elif angle == 180:
-                # Linha horizontal invertida: x=1,y=13 até x=29,y=17
-                for y in range(13, 17):
-                    draw.line([(1, y), (29, y)], fill=(0, 0, 0, 255), width=1)
-            elif angle == 270:
-                # Linha vertical invertida: x=13,y=1 até x=17,y=29
-                for x in range(13, 17):
-                    draw.line([(x, 1), (x, 29)], fill=(0, 0, 0, 255), width=1)
+            if angle in [0, 180]:
+                draw.line([(0, 14), (29, 14)], fill=(0, 0, 0, 255), width=4)
+            elif angle in [45, 225]:
+                draw.line([(0, 29), (29, 0)], fill=(0, 0, 0, 255), width=6)
+            elif angle in [90, 270]:
+                draw.line([(14, 1), (14, 29)], fill=(0, 0, 0, 255), width=4)
+            elif angle in [135, 315]:
+                draw.line([(0, 0), (29, 29)], fill=(0, 0, 0, 255), width=6)
+
+
+            def draw_rotated_rectangle(draw, x1, y1, x2, y2, angle, outline=(0,0,0,255), fill=(255,255,255,255)):
+                cx = (x1 + x2) / 2
+                cy = (y1 + y2) / 2
+
+                w = x2 - x1
+                h = y2 - y1
+
+                corners = [
+                    (-w/2, -h/2),
+                    ( w/2, -h/2),
+                    ( w/2,  h/2),
+                    (-w/2,  h/2)
+                ]
+
+                rad = math.radians(angle)
+
+                points = []
+
+                for x, y in corners:
+                    rx = x * math.cos(rad) - y * math.sin(rad)
+                    ry = x * math.sin(rad) + y * math.cos(rad)
+
+                    points.append((cx + rx, cy + ry))
+
+                draw.polygon(points, outline=outline, fill=fill)
 
             # Desenhar quadrado de texto
-            draw.rectangle([
-                (area['x1'], area['y1']),
-                (area['x2'], area['y2'])
-            ], outline=(0, 0, 0, 255), width=1, fill=(255, 255, 255, 255))  # Fundo branco para o texto
+            if angle in [45, 135, 225, 315]:
+                draw_rotated_rectangle(draw, area['x1'], area['y1'], area['x2'], area['y2'], area['rotation'], outline=(0, 0, 0, 255), fill=(255, 255, 255, 255))
+            else:
+                draw.rectangle([
+                    (area['x1'], area['y1']),
+                    (area['x2'], area['y2'])
+                ], outline=(0, 0, 0, 255), width=1, fill=(255, 255, 255, 255))  # Fundo branco para o texto
             
             # Adicionar texto no quadrado
             try:
-                font = ImageFont.truetype("arial.ttf", 4, bold=True)  # Fonte menor para FMAs
-            except:
+                font_name = "72-Regular.ttf" 
+                font = ImageFont.truetype(font_name, 10)
+            except Exception as e:
+                print(f"Erro ao carregar fonte {font_name}: {e}. Usando fonte padrão.")
                 font = ImageFont.load_default()
             
             # Calcular centro do quadrado de texto (toda FMA já foi ajustada 1 pixel para cima)
@@ -10358,7 +10422,6 @@ class FDSFormGenerator:
             
             # Para ângulos 90° e 270°, criar texto rotacionado
             if angle == 90:
-                # Criar imagem temporária para rotacionar o texto
                 temp_img = Image.new('RGBA', (50, 50), (0, 0, 0, 0))
                 temp_draw = ImageDraw.Draw(temp_img)
                 temp_draw.text((25, 25), text, fill=(0, 0, 0, 255), font=font, anchor="mm")
@@ -10366,11 +10429,24 @@ class FDSFormGenerator:
                 # Colar texto rotacionado na posição correta
                 img.paste(temp_img, (text_center_x - 25, text_center_y - 25), temp_img)
             elif angle == 270:
-                # Criar imagem temporária para rotacionar o texto
                 temp_img = Image.new('RGBA', (50, 50), (0, 0, 0, 0))
                 temp_draw = ImageDraw.Draw(temp_img)
                 temp_draw.text((25, 25), text, fill=(0, 0, 0, 255), font=font, anchor="mm")
                 temp_img = temp_img.rotate(90, expand=False)  # Rotacionar 90° anti-horário
+                # Colar texto rotacionado na posição correta
+                img.paste(temp_img, (text_center_x - 25, text_center_y - 25), temp_img)
+            elif angle in [135, 315]:
+                temp_img = Image.new('RGBA', (50, 50), (0, 0, 0, 0))
+                temp_draw = ImageDraw.Draw(temp_img)
+                temp_draw.text((25, 25), text, fill=(0, 0, 0, 255), font=font, anchor="mm")
+                temp_img = temp_img.rotate(315, expand=False)  # Rotacionar 135°
+                # Colar texto rotacionado na posição correta
+                img.paste(temp_img, (text_center_x - 25, text_center_y - 25), temp_img)
+            elif angle in [45, 225]:
+                temp_img = Image.new('RGBA', (50, 50), (0, 0, 0, 0))
+                temp_draw = ImageDraw.Draw(temp_img)
+                temp_draw.text((25, 25), text, fill=(0, 0, 0, 255), font=font, anchor="mm")
+                temp_img = temp_img.rotate(45, expand=False)  # Rotacionar 45°
                 # Colar texto rotacionado na posição correta
                 img.paste(temp_img, (text_center_x - 25, text_center_y - 25), temp_img)
             else:
@@ -10383,106 +10459,96 @@ class FDSFormGenerator:
         except Exception as e:
             print(f"Erro ao criar imagem FMA com texto '{text}' (ângulo {angle}°): {e}")
             return None
-    
-    def create_fma_blue_image_with_integrated_text(self, angle, text):
-        """
-        Cria uma imagem FMA AZUL personalizada com texto integrado (para highlighting)
-        
-        Args:
-            angle: Ângulo da FMA (0, 90, 180, 270)  
-            text: Texto a ser integrado na imagem (ex: "2DAT", "1AT", etc)
-            
-        Returns:
-            ImageTk.PhotoImage azul pronto para uso no canvas ou None se erro
-        """
-        try:
-            from PIL import Image, ImageDraw, ImageFont, ImageTk
-            
-            # Criar imagem 30x30 com fundo transparente
-            img = Image.new('RGBA', (30, 30), (0, 0, 0, 0))
-            draw = ImageDraw.Draw(img)
-            
-            # Definir posições dos quadrados de texto por ângulo - AJUSTADO 1 pixel para cima
-            text_areas = {
-                0: {'x1': 2, 'y1': 18, 'x2': 29, 'y2': 28, 'rotation': 0},     # Ângulo 0°
-                90: {'x1': 18, 'y1': 2, 'x2': 28, 'y2': 29, 'rotation': 90},   # Ângulo 90°
-                180: {'x1': 2, 'y1': 3, 'x2': 29, 'y2': 13, 'rotation': 180},  # Ângulo 180°
-                270: {'x1': 3, 'y1': 2, 'x2': 13, 'y2': 29, 'rotation': 270}   # Ângulo 270°
-            }
-            
-            if angle not in text_areas:
-                angle = 0  # Fallback para ângulo 0
-            
-            area = text_areas[angle]
-            
-            # CORES AZUIS para highlighting
-            blue_line_color = (48, 48, 227, 255)      # Azul para linhas
-            blue_outline_color = (48, 48, 227, 255)   # Azul para contorno
-            blue_fill_color = (255, 255, 255, 255)    # Fundo BRANCO para a caixa de texto (igual às FMAs normais)
-            blue_text_color = (0, 0, 0, 255)          # Texto PRETO para legibilidade no fundo branco
-            
-            # Desenhar linha principal baseada no ângulo - AJUSTADO 1 pixel para cima
-            if angle == 0:
-                # Linha horizontal: x=1,y=13 até x=29,y=17
-                for y in range(13, 17):
-                    draw.line([(1, y), (29, y)], fill=blue_line_color, width=1)
-            elif angle == 90:
-                # Linha vertical equivalente: x=13,y=0 até x=17,y=29
-                for x in range(13, 17):
-                    draw.line([(x, 1), (x, 29)], fill=blue_line_color, width=1)
-            elif angle == 180:
-                # Linha horizontal invertida: x=1,y=13 até x=29,y=17
-                for y in range(13, 17):
-                    draw.line([(1, y), (29, y)], fill=blue_line_color, width=1)
-            elif angle == 270:
-                # Linha vertical invertida: x=13,y=1 até x=17,y=29
-                for x in range(13, 17):
-                    draw.line([(x, 1), (x, 29)], fill=blue_line_color, width=1)
 
-            # Desenhar quadrado de texto (EM AZUL)
-            draw.rectangle([
-                (area['x1'], area['y1']),
-                (area['x2'], area['y2'])
-            ], outline=blue_outline_color, width=1, fill=blue_fill_color)  # Fundo azul claro para o texto
-            
-            # Adicionar texto no quadrado (EM AZUL ESCURO)
+    def create_fma_blue_image_with_integrated_text(self, angle, text):
             try:
-                font = ImageFont.truetype("arial.ttf", 4, bold=True)  # Fonte menor para FMAs
-            except:
-                font = ImageFont.load_default()
-            
-            # Calcular centro do quadrado de texto (toda FMA já foi ajustada 1 pixel para cima)
-            text_center_x = (area['x1'] + area['x2']) // 2
-            text_center_y = (area['y1'] + area['y2']) // 2  # Centro normal, pois toda FMA subiu
-            
-            # Para ângulos 90° e 270°, criar texto rotacionado
-            if angle == 90:
-                # Criar imagem temporária para rotacionar o texto
-                temp_img = Image.new('RGBA', (50, 50), (0, 0, 0, 0))
-                temp_draw = ImageDraw.Draw(temp_img)
-                temp_draw.text((25, 25), text, fill=blue_text_color, font=font, anchor="mm")
-                temp_img = temp_img.rotate(-90, expand=False)  # Rotacionar 90° horário
-                # Colar texto rotacionado na posição correta
-                img.paste(temp_img, (text_center_x - 25, text_center_y - 25), temp_img)
-            elif angle == 270:
-                # Criar imagem temporária para rotacionar o texto
-                temp_img = Image.new('RGBA', (50, 50), (0, 0, 0, 0))
-                temp_draw = ImageDraw.Draw(temp_img)
-                temp_draw.text((25, 25), text, fill=blue_text_color, font=font, anchor="mm")
-                temp_img = temp_img.rotate(90, expand=False)  # Rotacionar 90° anti-horário
-                # Colar texto rotacionado na posição correta
-                img.paste(temp_img, (text_center_x - 25, text_center_y - 25), temp_img)
-            else:
-                # Texto normal (0° e 180°)
-                draw.text((text_center_x, text_center_y), text, fill=blue_text_color, font=font, anchor="mm")
-            
-            # Converter para ImageTk.PhotoImage com correção de bug Python 3.13
-            return self.create_safe_photo_image(img, f"fma_blue_{angle}_{text}")
-            
-        except Exception as e:
-            print(f"Erro ao criar imagem FMA AZUL com texto '{text}' (ângulo {angle}°): {e}")
-            return None
-    
+                from PIL import Image, ImageDraw, ImageFont, ImageTk
+                
+                # Criar imagem 30x30 com fundo transparente
+                img = Image.new('RGBA', (30, 30), (0, 0, 0, 0))
+                draw = ImageDraw.Draw(img)
+                
+                # Definir posições dos quadrados de texto por ângulo - AJUSTADO 1 pixel para cima
+                text_areas = {
+                    0: {'x1': 2, 'y1': 18, 'x2': 29, 'y2': 28, 'rotation': 0},     # Ângulo 0°
+                    90: {'x1': 18, 'y1': 2, 'x2': 28, 'y2': 29, 'rotation': 90},   # Ângulo 90°
+                    180: {'x1': 2, 'y1': 3, 'x2': 29, 'y2': 13, 'rotation': 180},  # Ângulo 180°
+                    270: {'x1': 3, 'y1': 2, 'x2': 13, 'y2': 29, 'rotation': 270}   # Ângulo 270°
+                }
+                
+                if angle not in text_areas:
+                    angle = 0  # Fallback para ângulo 0
+                
+                area = text_areas[angle]
+                
+                # CORES AZUIS para highlighting
+                blue_line_color = (48, 48, 227, 255)      # Azul para linhas
+                blue_outline_color = (48, 48, 227, 255)   # Azul para contorno
+                blue_fill_color = (255, 255, 255, 255)    # Fundo BRANCO para a caixa de texto (igual às FMAs normais)
+                blue_text_color = (0, 0, 0, 255)          # Texto PRETO para legibilidade no fundo branco
+                
+                # Desenhar linha principal baseada no ângulo - AJUSTADO 1 pixel para cima
+                if angle == 0:
+                    # Linha horizontal: x=1,y=13 até x=29,y=17
+                    for y in range(13, 17):
+                        draw.line([(1, y), (29, y)], fill=blue_line_color, width=1)
+                elif angle == 90:
+                    # Linha vertical equivalente: x=13,y=0 até x=17,y=29
+                    for x in range(13, 17):
+                        draw.line([(x, 1), (x, 29)], fill=blue_line_color, width=1)
+                elif angle == 180:
+                    # Linha horizontal invertida: x=1,y=13 até x=29,y=17
+                    for y in range(13, 17):
+                        draw.line([(1, y), (29, y)], fill=blue_line_color, width=1)
+                elif angle == 270:
+                    # Linha vertical invertida: x=13,y=1 até x=17,y=29
+                    for x in range(13, 17):
+                        draw.line([(x, 1), (x, 29)], fill=blue_line_color, width=1)
+
+                # Desenhar quadrado de texto (EM AZUL)
+                draw.rectangle([
+                    (area['x1'], area['y1']),
+                    (area['x2'], area['y2'])
+                ], outline=blue_outline_color, width=1, fill=blue_fill_color)  # Fundo azul claro para o texto
+                
+                # Adicionar texto no quadrado (EM AZUL ESCURO)
+                try:
+                    font = ImageFont.truetype("arial.ttf", 4, bold=True)  # Fonte menor para FMAs
+                except:
+                    font = ImageFont.load_default()
+                
+                # Calcular centro do quadrado de texto (toda FMA já foi ajustada 1 pixel para cima)
+                text_center_x = (area['x1'] + area['x2']) // 2
+                text_center_y = (area['y1'] + area['y2']) // 2  # Centro normal, pois toda FMA subiu
+                
+                # Para ângulos 90° e 270°, criar texto rotacionado
+                if angle == 90:
+                    # Criar imagem temporária para rotacionar o texto
+                    temp_img = Image.new('RGBA', (50, 50), (0, 0, 0, 0))
+                    temp_draw = ImageDraw.Draw(temp_img)
+                    temp_draw.text((25, 25), text, fill=blue_text_color, font=font, anchor="mm")
+                    temp_img = temp_img.rotate(-90, expand=False)  # Rotacionar 90° horário
+                    # Colar texto rotacionado na posição correta
+                    img.paste(temp_img, (text_center_x - 25, text_center_y - 25), temp_img)
+                elif angle == 270:
+                    # Criar imagem temporária para rotacionar o texto
+                    temp_img = Image.new('RGBA', (50, 50), (0, 0, 0, 0))
+                    temp_draw = ImageDraw.Draw(temp_img)
+                    temp_draw.text((25, 25), text, fill=blue_text_color, font=font, anchor="mm")
+                    temp_img = temp_img.rotate(90, expand=False)  # Rotacionar 90° anti-horário
+                    # Colar texto rotacionado na posição correta
+                    img.paste(temp_img, (text_center_x - 25, text_center_y - 25), temp_img)
+                else:
+                    # Texto normal (0° e 180°)
+                    draw.text((text_center_x, text_center_y), text, fill=blue_text_color, font=font, anchor="mm")
+                
+                # Converter para ImageTk.PhotoImage com correção de bug Python 3.13
+                return self.create_safe_photo_image(img, f"fma_blue_{angle}_{text}")
+                
+            except Exception as e:
+                print(f"Erro ao criar imagem FMA AZUL com texto '{text}' (ângulo {angle}°): {e}")
+                return None
+        
     def load_trackplan(self, filename=None):
         """Carrega um trackplan XML de forma organizada e eficiente"""
         if filename is None:
@@ -10508,11 +10574,11 @@ class FDSFormGenerator:
             else:
                 tree = ET.parse(filename)
 
-            root = tree.getroot()
-            
-            # Estrutura de dados organizada
-            
-            xml_data = TrackplanXMLData(root, getattr(filename, 'name', 'from_zip'))
+            if TrackplanService is not None:
+                xml_data = TrackplanService.parse_trackplan_xml(tree, filename=getattr(filename, 'name', 'from_zip'))
+            else:
+                root = tree.getroot()
+                xml_data = TrackplanXMLData(root, getattr(filename, 'name', 'from_zip'))
             
             # Limpar estado atual
             self._clear_current_trackplan()
@@ -10538,6 +10604,8 @@ class FDSFormGenerator:
     def load_fds_recovery(self):
         """Carrega o FdsRecovery.zip para análise de um projeto completo"""
         try:
+            fds_config_encontrado = False
+            trackplan_encontrado = False
             filename = filedialog.askopenfilename(
                 title="Carregar FdsRecovery.zip",
                 defaultextension=".zip",
@@ -10554,11 +10622,20 @@ class FDSFormGenerator:
                     with zip_ref.open(xml_name) as f:
                         conteudoxml = f.read()
                         if "FdsConfig" in xml_name:
+                            fds_config_encontrado = True
                             self.load_fds_config(conteudoxml)
 
                         elif "Trackplan" in xml_name:
+                            trackplan_encontrado = True
                             self.load_trackplan(conteudoxml)
                             self.load_cubicles_from_xml(conteudoxml)
+
+            if not fds_config_encontrado:
+                messagebox.showwarning("Aviso", "FdsConfig.xml não encontrado no zip.")
+            if not trackplan_encontrado:
+                messagebox.showwarning("Aviso", "Trackplan.xml não encontrado no zip.")
+
+            self.update_xml_preview()
 
         except Exception as e:
             messagebox.showerror("Erro", f"Falha ao carregar FdsRecovery.zip: {e}")
@@ -12179,16 +12256,27 @@ class FDSFormGenerator:
                 elem_type = str(getattr(e, 'element_type', '')).lower()
                 elem_assignment = str(getattr(e, 'element_assignment', '')).lower()
 
-                # Buscar em ID, Tipo e Atribuição
+                cubicle_ids = set()
+
+                for cubicle in self.cubicles_data:
+                    if search_text in (cubicle.get('name', '') or '').lower():
+                        cubicle_ids.update(
+                            str(slot['id'])
+                            for slot in cubicle['rack']['bp']['slots'].values()
+                            if 'id' in slot
+                        )
+
                 return (
                     search_text in elem_id or
                     search_text in elem_type or
-                    search_text in elem_assignment
+                    search_text in elem_assignment or
+                    any(item.endswith(elem_id) for item in cubicle_ids)
                 )
 
             for element in sorted_elements:
                 if not matches_search(element):
                     continue
+
 
                 # Montar valores seguros
                 eid = getattr(element, 'element_id', '')
@@ -12249,7 +12337,7 @@ class FDSFormGenerator:
     def add_counting_head(self):
         """Adiciona um CountingHead com atribuição automática ZP{element_id}"""
         element_id = simpledialog.askinteger("CountingHead", "Digite o Element ID:")
-        if element_id < 0:
+        if element_id < 0 or not isinstance(element_id, int):
             messagebox.showerror("Erro", "Valores negativos não são aceitos")
             return
         if not self.verifica_unico(element_id, 'CountingHead'):
@@ -12422,6 +12510,27 @@ class FDSFormGenerator:
                 if vago_var.get():
                     assignment2 = "VAGO"
                 
+                ja_existe_aeb_ou_counting_head = any(
+                    element.element_id == element_id and element.element_type in ["Aeb", "CountingHead"]
+                    for element in self.current_generator.elements
+                )
+
+                if not self.current_generator.elements:
+                    aeb_assignment = f"AEB{element_id}"
+                    counting_head_assignment = f"ZP{element_id}"
+                    element3 = ElementConfig(element_id, "Aeb", aeb_assignment)
+                    element4 = ElementConfig(element_id, "CountingHead", counting_head_assignment)
+                    self.current_generator.add_element(element3)
+                    self.current_generator.add_element(element4)
+                else:
+                    if not ja_existe_aeb_ou_counting_head:
+                        aeb_assignment = f"AEB{element_id}"
+                        counting_head_assignment = f"ZP{element_id}"
+                        element3 = ElementConfig(element_id, "Aeb", aeb_assignment)
+                        element4 = ElementConfig(element_id, "CountingHead", counting_head_assignment)
+                        self.current_generator.add_element(element3)
+                        self.current_generator.add_element(element4)
+
                 # Criar ambas TrackSections
                 element1 = ElementConfig(element_id, "TrackSection1", assignment1)
                 element2 = ElementConfig(element_id, "TrackSection2", assignment2)
@@ -12590,7 +12699,7 @@ class FDSFormGenerator:
                 "mirror_fixed_angles": []  # Mirror sempre 0
             },
             "fma": {
-                "angles": ["0", "90", "180", "270"],
+                "angles": ["0", "90", "180", "270"] if self.fds_model == "FDS101" else ["0", "45", "90", "135", "180", "225", "270", "315"],
                 "mirror_enabled": False,
                 "mirror_fixed_angles": []  # Mirror sempre 0
             }
@@ -17502,12 +17611,13 @@ Revise as conexões físicas no campo antes de finalizar."""
         examples_frame = ttk.LabelFrame(content_frame, text="📝 Exemplo de Configuração", padding="15")
         examples_frame.pack(fill=tk.X)
         
-        example_text = """IP Address Net1: 192.168.1.27
+        example_text = """IP Address Net1: 192.168.1.12
 Mask Net1: 255.255.255.0
 Gateway Net1: 192.168.1.1
 IP Address Net2: 192.168.0.12
 UDP Port FADC: 45
-Time Server 1: 192.168.103.172"""
+Time Server 1: 192.168.103.172
+Time Server 2: 192.168.103.173"""
         
         example_widget = tk.Text(examples_frame, wrap=tk.WORD, height=6, font=("Courier", 9),
                                bg="#f8f9fa", relief="solid", borderwidth=1)

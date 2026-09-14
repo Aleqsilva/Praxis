@@ -18,11 +18,11 @@ from datetime import datetime
 @dataclass
 class NetworkConfig:
     """Configurações de rede para o sistema FDS"""
-    ip_net1: str
+    ip_net1: str = "192.168.1.12"
     mask_net1: str = "255.255.255.0"
     ip_net2: str = "192.168.0.12"
     mask_net2: str = "255.255.255.0"
-    gateway_net1: str = "192.168.0.1"
+    gateway_net1: str = "192.168.1.1"
     gateway_net2: str = "192.168.0.1"
     default_gateway: str = "Gateway2"
     udp_port: int = 45
