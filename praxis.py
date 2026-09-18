@@ -9373,7 +9373,6 @@ class FDSFormGenerator:
                 outline="blue", width=3, fill="lightblue", stipple="gray25",
                 tags="row_highlight"
             )
-            print(f"Linha {row} destacada com ID {highlight_id}")
             
             # Agendar remoção do destaque após 3 segundos
             self.root.after(3000, lambda: self.trackplan_canvas.delete("row_highlight"))
@@ -10350,11 +10349,11 @@ class FDSFormGenerator:
                 0: {'x1': 2, 'y1': 18, 'x2': 29, 'y2': 28, 'rotation': 0},     # Ângulo 0° (subiu 1 pixel)
                 45: {'x1': -2, 'y1': 5, 'x2': 20, 'y2': 15, 'rotation': 135},    # Ângulo 135° (subiu 1 pixel)
                 90: {'x1': 18, 'y1': 2, 'x2': 28, 'y2': 29, 'rotation': 90},   # Ângulo 90° (esquerda 1 pixel)
-                135: {'x1': 10, 'y1': 15, 'x2': 32, 'y2': 25, 'rotation': 315},  # Ângulo 315° (esquerda 1 pixel)
+                135: {'x1': 2, 'y1': 3, 'x2': 13, 'y2': 28, 'rotation': 315},   # Ângulo 315° (direita 1 pixel)
                 180: {'x1': 2, 'y1': 3, 'x2': 29, 'y2': 13, 'rotation': 180},  # Ângulo 180° (desceu 1 pixel)
                 225: {'x1': 0, 'y1': 0, 'x2': 20, 'y2': 20, 'rotation': 135},   # Ângulo 135° (desceu 1 pixel)
                 270: {'x1': 3, 'y1': 2, 'x2': 13, 'y2': 29, 'rotation': 270},   # Ângulo 270° (direita 1 pixel)
-                315: {'x1': 2, 'y1': 3, 'x2': 13, 'y2': 28, 'rotation': 315}   # Ângulo 315° (direita 1 pixel)
+                315: {'x1': 2, 'y1': 15, 'x2': 32, 'y2': 0, 'rotation': 45},    # Ângulo 135° (subiu 1 pixel)
             }
             
             if angle not in text_areas:
@@ -10470,12 +10469,16 @@ class FDSFormGenerator:
                 
                 # Definir posições dos quadrados de texto por ângulo - AJUSTADO 1 pixel para cima
                 text_areas = {
-                    0: {'x1': 2, 'y1': 18, 'x2': 29, 'y2': 28, 'rotation': 0},     # Ângulo 0°
-                    90: {'x1': 18, 'y1': 2, 'x2': 28, 'y2': 29, 'rotation': 90},   # Ângulo 90°
-                    180: {'x1': 2, 'y1': 3, 'x2': 29, 'y2': 13, 'rotation': 180},  # Ângulo 180°
-                    270: {'x1': 3, 'y1': 2, 'x2': 13, 'y2': 29, 'rotation': 270}   # Ângulo 270°
+                    0: {'x1': 2, 'y1': 18, 'x2': 29, 'y2': 28, 'rotation': 0},     # Ângulo 0° (subiu 1 pixel)
+                    45: {'x1': -2, 'y1': 5, 'x2': 20, 'y2': 15, 'rotation': 135},    # Ângulo 135° (subiu 1 pixel)
+                    90: {'x1': 18, 'y1': 2, 'x2': 28, 'y2': 29, 'rotation': 90},   # Ângulo 90° (esquerda 1 pixel)
+                    135: {'x1': 2, 'y1': 3, 'x2': 13, 'y2': 28, 'rotation': 315},   # Ângulo 315° (direita 1 pixel)
+                    180: {'x1': 2, 'y1': 3, 'x2': 29, 'y2': 13, 'rotation': 180},  # Ângulo 180° (desceu 1 pixel)
+                    225: {'x1': 0, 'y1': 0, 'x2': 20, 'y2': 20, 'rotation': 135},   # Ângulo 135° (desceu 1 pixel)
+                    270: {'x1': 3, 'y1': 2, 'x2': 13, 'y2': 29, 'rotation': 270},   # Ângulo 270° (direita 1 pixel)
+                    315: {'x1': 2, 'y1': 15, 'x2': 32, 'y2': 0, 'rotation': 45},    # Ângulo 135° (subiu 1 pixel)
                 }
-                
+                    
                 if angle not in text_areas:
                     angle = 0  # Fallback para ângulo 0
                 
@@ -10488,22 +10491,41 @@ class FDSFormGenerator:
                 blue_text_color = (0, 0, 0, 255)          # Texto PRETO para legibilidade no fundo branco
                 
                 # Desenhar linha principal baseada no ângulo - AJUSTADO 1 pixel para cima
-                if angle == 0:
-                    # Linha horizontal: x=1,y=13 até x=29,y=17
-                    for y in range(13, 17):
-                        draw.line([(1, y), (29, y)], fill=blue_line_color, width=1)
-                elif angle == 90:
-                    # Linha vertical equivalente: x=13,y=0 até x=17,y=29
-                    for x in range(13, 17):
-                        draw.line([(x, 1), (x, 29)], fill=blue_line_color, width=1)
-                elif angle == 180:
-                    # Linha horizontal invertida: x=1,y=13 até x=29,y=17
-                    for y in range(13, 17):
-                        draw.line([(1, y), (29, y)], fill=blue_line_color, width=1)
-                elif angle == 270:
-                    # Linha vertical invertida: x=13,y=1 até x=17,y=29
-                    for x in range(13, 17):
-                        draw.line([(x, 1), (x, 29)], fill=blue_line_color, width=1)
+                if angle in [0, 180]:
+                    draw.line([(0, 14), (29, 14)], fill=blue_line_color, width=4)
+                elif angle in [45, 225]:
+                    draw.line([(0, 29), (29, 0)], fill=blue_line_color, width=6)
+                elif angle in [90, 270]:
+                    draw.line([(14, 1), (14, 29)], fill=blue_line_color, width=4)
+                elif angle in [135, 315]:
+                    draw.line([(0, 0), (29, 29)], fill=blue_line_color, width=6)
+
+                def draw_rotated_rectangle(draw, x1, y1, x2, y2, angle, outline=(0,0,0,255), fill=(255,255,255,255)):
+                    cx = (x1 + x2) / 2
+                    cy = (y1 + y2) / 2
+
+                    w = x2 - x1
+                    h = y2 - y1
+
+                    corners = [
+                        (-w/2, -h/2),
+                        ( w/2, -h/2),
+                        ( w/2,  h/2),
+                        (-w/2,  h/2)
+                    ]
+
+                    rad = math.radians(angle)
+
+                    points = []
+
+                    for x, y in corners:
+                        rx = x * math.cos(rad) - y * math.sin(rad)
+                        ry = x * math.sin(rad) + y * math.cos(rad)
+
+                        points.append((cx + rx, cy + ry))
+
+                    draw.polygon(points, outline=outline, fill=fill)
+
 
                 # Desenhar quadrado de texto (EM AZUL)
                 draw.rectangle([
