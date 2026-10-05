@@ -31,6 +31,7 @@ Anteriormente, o processo exigia a edição manual e suscetível a erros de arqu
 ## Principais Funcionalidades
 
 * **Editor de Layout e Racks:** Interface visual interativa para arranjo e personalização de cubículos dentro do rack do FDS.
+* **Interface Nativa em Tkinter Pure-Python:** Toda a experiência visual (editor de layout, gerenciamento de cubículos, renderização dos racks e validações) foi desenvolvida **100% com Tkinter nativo**, demonstrando domínio avançado da biblioteca padrão do Python sem dependências visuais externas.
 * **Geração Automática de Artefatos:**
   * `FDS Config.xml` — Arquivo de parâmetros e regras de sistema.
   * `Track Plan.xml` — Mapeamento do plano de vias e elementos de campo.
