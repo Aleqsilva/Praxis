@@ -44,14 +44,3 @@ Anteriormente, o processo exigia a edição manual e suscetível a erros de arqu
 ---
 
 <img width="1407" height="938" alt="Screenshot 2026-10-05 173321" src="https://github.com/user-attachments/assets/d412f39c-24bd-4653-ba17-e60b197c34e9" />
-
-Arquitetura e Engenharia
-
-O projeto foi construído focando em modularidade e integridade dos dados:
-
-```text
-Praxis/
-├── core/           # Motor de validação e regras de negócio de hardware/cubículos
-├── layout/         # Gerenciamento de elementos visuais do rack e plano de vias
-├── generators/     # Gerador de esquemas XML (FDS Config & Track Plan) e compactação ZIP
-└── gui/            # Interface gráfica do usuário
